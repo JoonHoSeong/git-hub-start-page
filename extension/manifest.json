@@ -17,6 +17,9 @@
     "default_title": "GitHub Topic Radar",
     "default_popup": "popup.html"
   },
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
   "background": {
     "service_worker": "service-worker.js",
     "type": "module"

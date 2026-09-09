@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub Topic Radar</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body class="fulltab">
+    <header class="topbar">
+      <div class="brand">📡 GitHub Topic Radar</div>
+      <div class="topbar-actions">
+        <button id="refreshBtn" class="icon-btn" title="새로고침">↻</button>
+        <button id="authBtn" class="auth-btn">로그인</button>
+        <button id="settingsBtn" class="icon-btn" title="설정">⚙️</button>
+      </div>
+    </header>
+
+    <nav id="tabs" class="tabs"></nav>
+
+    <div id="sourceChips" class="source-chips"></div>
+
+    <main id="results" class="results">
+      <div class="empty">주제를 선택하세요.</div>
+    </main>
+
+    <section id="settingsPanel" class="settings-panel hidden">
+      <h2>설정</h2>
+      <fieldset>
+        <legend>LLM (선택) — OpenAI 호환</legend>
+        <label>Base URL <input id="llmBaseUrl" type="text" placeholder="https://api.openai.com/v1" /></label>
+        <label>API Key <input id="llmApiKey" type="password" placeholder="sk-... (비우면 무료 티어)" /></label>
+        <label>Model <input id="llmModel" type="text" placeholder="gpt-4o-mini" /></label>
+        <p class="hint">로컬(Ollama): http://localhost:11434/v1 · 키 없이 사용 가능</p>
+      </fieldset>
+      <fieldset>
+        <legend>일반</legend>
+        <label>캐시 유지(분) <input id="cacheTtl" type="number" min="1" max="240" /></label>
+        <label>LLM 검증 상위 N개 <input id="llmTopN" type="number" min="1" max="50" /></label>
+      </fieldset>
+      <div class="settings-actions">
+        <button id="saveSettings" class="primary">저장</button>
+        <button id="closeSettings">닫기</button>
+      </div>
+      <hr />
+      <div class="topic-manager">
+        <h3>주제 관리</h3>
+        <div id="topicList"></div>
+        <div class="add-topic">
+          <input id="newTopicName" type="text" placeholder="새 주제 이름 (예: Rust)" />
+          <input id="newTopicKeywords" type="text" placeholder="키워드 (쉼표: rust, cargo)" />
+          <button id="addTopic">추가</button>
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

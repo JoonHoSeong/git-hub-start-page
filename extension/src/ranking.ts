@@ -58,3 +58,29 @@ export function rankItems(
   items.sort((a, b) => b.score - a.score);
   return items;
 }
+
+/**
+ * Drop items whose text matches any of the topic's exclusion terms.
+ *
+ * Exclusions are applied here (client-side) rather than in the GitHub query,
+ * because a negated text term combined with a `topic:`-only query makes GitHub
+ * return zero results. We match case-insensitively against the repo full name,
+ * title, description, and topic tags.
+ */
+export function applyExclusions(items: RadarItem[], topic: TopicRecipe): RadarItem[] {
+  const terms = topic.exclude
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (terms.length === 0) return items;
+  return items.filter((item) => {
+    const haystack = [
+      item.repoFullName,
+      item.title,
+      item.description,
+      item.topics.join(" "),
+    ]
+      .join(" ")
+      .toLowerCase();
+    return !terms.some((t) => haystack.includes(t));
+  });
+}

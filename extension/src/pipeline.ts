@@ -1,6 +1,6 @@
 import type { AppSettings, RadarItem, TopicRecipe } from "./types.js";
 import { fetchTopic } from "./github.js";
-import { rankItems } from "./ranking.js";
+import { rankItems, applyExclusions } from "./ranking.js";
 import { enrichWithLlm } from "./llm.js";
 import { getCache, setCache } from "./storage.js";
 
@@ -41,7 +41,8 @@ export async function runTopic(
   }
 
   const raw = await fetchTopic(topic, token);
-  const ranked = rankItems(dedupe(raw), topic);
+  const filtered = applyExclusions(dedupe(raw), topic);
+  const ranked = rankItems(filtered, topic);
 
   const hasLlm = Boolean(settings.llm.apiKey) || /localhost|127\.0\.0\.1/.test(settings.llm.baseUrl);
   let llmApplied = false;
@@ -49,9 +50,9 @@ export async function runTopic(
     await enrichWithLlm(ranked, topic, settings.llm, settings.llmTopN);
     llmApplied = true;
     // Drop items the LLM judged irrelevant (only within the checked top-N).
-    const filtered = ranked.filter((it) => it.relevant !== false);
-    await setCache(topic.id, filtered);
-    return { items: filtered, fromCache: false, llmApplied };
+    const relevant = ranked.filter((it) => it.relevant !== false);
+    await setCache(topic.id, relevant);
+    return { items: relevant, fromCache: false, llmApplied };
   }
 
   await setCache(topic.id, ranked);
