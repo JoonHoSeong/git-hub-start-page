@@ -11,6 +11,7 @@ interface RunResult {
 let topics: TopicRecipe[] = [];
 let settings: AppSettings;
 let activeTopicId = "";
+let activeSubtopicId = "";
 
 const $ = <T extends HTMLElement>(sel: string): T => document.querySelector(sel) as T;
 
@@ -81,6 +82,27 @@ function renderSourceChips(): void {
       run(true);
     };
     box.appendChild(chip);
+  }
+
+  // Subtopic filter chips (finer-grained). "전체" clears the sub-filter.
+  if (topic.subtopics && topic.subtopics.length > 0) {
+    const divider = document.createElement("span");
+    divider.className = "chip-divider";
+    box.appendChild(divider);
+
+    const makeSub = (id: string, name: string) => {
+      const chip = document.createElement("span");
+      chip.className = "chip sub" + (activeSubtopicId === id ? " on" : "");
+      chip.textContent = name;
+      chip.onclick = () => {
+        activeSubtopicId = id;
+        renderSourceChips();
+        run(false);
+      };
+      box.appendChild(chip);
+    };
+    makeSub("", "전체");
+    for (const s of topic.subtopics) makeSub(s.id, s.name);
   }
 }
 
@@ -197,7 +219,7 @@ async function run(forceRefresh = false): Promise<void> {
   }
 
   try {
-    const data = await send<RunResult>({ type: "runTopic", topicId: activeTopicId, forceRefresh });
+    const data = await send<RunResult>({ type: "runTopic", topicId: activeTopicId, forceRefresh, subtopicId: activeSubtopicId || undefined });
     results.innerHTML = "";
     if (data.items.length === 0) {
       results.innerHTML = `<div class="empty">결과가 없습니다.</div>`;
@@ -211,6 +233,7 @@ async function run(forceRefresh = false): Promise<void> {
 
 function selectTopic(id: string): void {
   activeTopicId = id;
+  activeSubtopicId = "";
   renderTabs();
   renderSourceChips();
   run(false);

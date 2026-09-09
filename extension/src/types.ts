@@ -16,8 +16,23 @@ export interface TopicRecipe {
   recentDays: number;
   /** Which GitHub content sources to include for this topic. */
   sources: TopicSources;
+  /** Optional finer-grained sub-filters shown as chips within the topic. */
+  subtopics?: Subtopic[];
   /** True for built-in presets (still user-editable/removable). */
   isPreset: boolean;
+}
+
+/**
+ * A sub-filter within a topic. When active, its githubTopics/include/exclude are
+ * intersected with the parent topic to narrow results (e.g. MCP → Server).
+ */
+export interface Subtopic {
+  id: string;
+  name: string;
+  /** Official topic tags that further narrow the parent topic. */
+  githubTopics: string[];
+  /** Extra exclusions applied client-side for this sub-filter. */
+  exclude?: string[];
 }
 
 export interface TopicSources {

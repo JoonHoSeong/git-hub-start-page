@@ -165,6 +165,9 @@ body {
   -webkit-backdrop-filter: blur(6px);
 }
 .chip.on { background: var(--accent-dim); border-color: var(--accent); color: var(--text); }
+.chip.sub { font-size: 11px; opacity: .95; }
+.chip-divider { width: 1px; align-self: stretch; background: var(--glass-border); margin: 0 4px; }
+.source-chips { flex-wrap: wrap; align-items: center; }
 
 /* ---- results ---- */
 .results { padding: 6px 14px 16px; overflow-y: auto; max-height: 460px; }
