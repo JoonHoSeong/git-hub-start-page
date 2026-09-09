@@ -1,5 +1,6 @@
 import type { AppSettings, RadarItem, TopicRecipe } from "./types.js";
 import { loadSettings, loadTopics, saveSettings, saveTopics } from "./storage.js";
+import { translateText, isTranslationSupported, TRANSLATE_LANGUAGES } from "./translate.js";
 
 interface RunResult {
   items: RadarItem[];
@@ -111,7 +112,46 @@ function card(item: RadarItem): HTMLElement {
   const bmBtn = el.querySelector<HTMLButtonElement>(".star-btn")!;
   void refreshBookmarkState(item.id, bmBtn);
   bmBtn.onclick = () => toggleBookmark(item, bmBtn);
+
+  // Background translation of the description (Chrome built-in Translator API).
+  if (item.description && settings.translateTo && settings.translateTo !== "off") {
+    const descEl = el.querySelector<HTMLDivElement>(".card-desc");
+    if (descEl) void translateCardDesc(descEl, item.description, settings.translateTo);
+  }
   return el;
+}
+
+/**
+ * Translate one card's description in place, adding a small toggle to switch
+ * between the translated text and the original. Runs asynchronously so cards
+ * render immediately with the original text first.
+ */
+async function translateCardDesc(el: HTMLDivElement, original: string, target: string): Promise<void> {
+  if (!isTranslationSupported()) return;
+  try {
+    const translated = await translateText(original, target);
+    if (translated === original) return; // same language or failed -> keep original
+    let showingTranslated = true;
+    const render = () => {
+      el.innerHTML = "";
+      const text = document.createElement("span");
+      text.textContent = showingTranslated ? translated : original;
+      const toggle = document.createElement("button");
+      toggle.className = "orig-toggle";
+      toggle.textContent = showingTranslated ? "원문" : "번역";
+      toggle.title = showingTranslated ? "원문 보기" : "번역 보기";
+      toggle.onclick = () => {
+        showingTranslated = !showingTranslated;
+        render();
+      };
+      el.appendChild(text);
+      el.appendChild(document.createTextNode(" "));
+      el.appendChild(toggle);
+    };
+    render();
+  } catch {
+    /* keep original */
+  }
 }
 
 async function refreshBookmarkState(id: string, btn: HTMLButtonElement): Promise<void> {
@@ -186,8 +226,31 @@ function openSettings(): void {
   ($("#llmTopN") as HTMLInputElement).value = String(settings.llmTopN);
   ($("#theme") as HTMLSelectElement).value = settings.theme;
   ($("#density") as HTMLSelectElement).value = settings.density;
+  populateTranslateSelect();
+  ($("#translateTo") as HTMLSelectElement).value = settings.translateTo;
   renderTopicManager();
   $("#settingsPanel").classList.remove("hidden");
+}
+
+let translateSelectPopulated = false;
+function populateTranslateSelect(): void {
+  if (translateSelectPopulated) return;
+  const sel = $("#translateTo") as HTMLSelectElement;
+  sel.innerHTML = "";
+  for (const { code, label } of TRANSLATE_LANGUAGES) {
+    const opt = document.createElement("option");
+    opt.value = code;
+    opt.textContent = label;
+    sel.appendChild(opt);
+  }
+  translateSelectPopulated = true;
+  // Note if the browser lacks the built-in Translator API.
+  const note = $("#translateNote");
+  if (note) {
+    note.textContent = isTranslationSupported()
+      ? "브라우저 내장 AI로 기기에서 번역합니다 (무료·비공개). 첫 사용 시 언어팩을 내려받습니다."
+      : "이 브라우저는 내장 번역을 지원하지 않습니다 (Chrome/Edge 138+ 데스크톱 필요). 원문으로 표시됩니다.";
+  }
 }
 
 function renderTopicManager(): void {
@@ -249,6 +312,7 @@ async function saveSettingsFromForm(): Promise<void> {
   settings.llmTopN = Number(($("#llmTopN") as HTMLInputElement).value) || settings.llmTopN;
   settings.theme = ($("#theme") as HTMLSelectElement).value as AppSettings["theme"];
   settings.density = ($("#density") as HTMLSelectElement).value as AppSettings["density"];
+  settings.translateTo = ($("#translateTo") as HTMLSelectElement).value;
   applyTheme(settings.theme);
   applyDensity(settings.density);
   await saveSettings(settings);

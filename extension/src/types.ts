@@ -73,6 +73,9 @@ export interface AppSettings {
   theme: "auto" | "dark" | "light";
   /** Card grid density on the full page. */
   density: "comfortable" | "cozy" | "compact";
+  /** Translate card descriptions to this language via Chrome's built-in
+   *  Translator API. "off" disables translation; otherwise a BCP-47 code. */
+  translateTo: string;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -82,4 +85,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   llmTopN: 15,
   theme: "auto",
   density: "comfortable",
+  translateTo: "off",
 };

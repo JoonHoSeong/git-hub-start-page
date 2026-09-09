@@ -49,6 +49,10 @@
             <option value="compact">촘촘하게 (열 많음)</option>
           </select>
         </label>
+        <label>번역 (브라우저 내장 AI)
+          <select id="translateTo"></select>
+        </label>
+        <p class="hint" id="translateNote"></p>
         <label>캐시 유지(분) <input id="cacheTtl" type="number" min="1" max="240" /></label>
         <label>LLM 검증 상위 N개 <input id="llmTopN" type="number" min="1" max="50" /></label>
       </fieldset>

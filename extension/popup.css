@@ -200,6 +200,17 @@ body {
   height: fit-content;
 }
 .card-desc { color: var(--text); opacity: .92; margin: 7px 0; line-height: 1.45; }
+.orig-toggle {
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--muted);
+  cursor: pointer;
+  vertical-align: middle;
+}
+.orig-toggle:hover { border-color: var(--accent); color: var(--text); }
 .card-summary {
   color: var(--text);
   background: linear-gradient(135deg, var(--accent-dim), transparent);
