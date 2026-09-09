@@ -68,3 +68,36 @@ chrome.runtime.onMessage.addListener((msg: Msg, _sender, sendResponse) => {
     );
   return true; // keep the message channel open for the async response
 });
+
+// ---- Full-page open behavior (popup is removed) ----
+
+const FULL_PAGE_URL = chrome.runtime.getURL("newtab.html");
+
+/**
+ * Open the full page. If a Topic Radar tab is already open, focus it instead of
+ * opening a duplicate; otherwise create a new tab.
+ */
+async function openFullPage(): Promise<void> {
+  const existing = await chrome.tabs.query({ url: FULL_PAGE_URL });
+  if (existing.length > 0 && existing[0].id !== undefined) {
+    await chrome.tabs.update(existing[0].id, { active: true });
+    if (existing[0].windowId !== undefined) {
+      await chrome.windows.update(existing[0].windowId, { focused: true });
+    }
+    return;
+  }
+  await chrome.tabs.create({ url: FULL_PAGE_URL });
+}
+
+// Toolbar icon click -> open the full page in a tab (no popup).
+chrome.action.onClicked.addListener(() => {
+  void openFullPage();
+});
+
+// On browser startup, optionally open the full page (user-toggleable setting).
+chrome.runtime.onStartup.addListener(() => {
+  void (async () => {
+    const settings = await loadSettings();
+    if (settings.openOnStartup) await openFullPage();
+  })();
+});

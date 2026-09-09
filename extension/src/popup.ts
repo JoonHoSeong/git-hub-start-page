@@ -170,6 +170,7 @@ function openSettings(): void {
   ($("#llmModel") as HTMLInputElement).value = settings.llm.model;
   ($("#cacheTtl") as HTMLInputElement).value = String(settings.cacheTtlMinutes);
   ($("#llmTopN") as HTMLInputElement).value = String(settings.llmTopN);
+  ($("#openOnStartup") as HTMLInputElement).checked = settings.openOnStartup;
   renderTopicManager();
   $("#settingsPanel").classList.remove("hidden");
 }
@@ -231,6 +232,7 @@ async function saveSettingsFromForm(): Promise<void> {
   settings.llm.model = ($("#llmModel") as HTMLInputElement).value.trim() || settings.llm.model;
   settings.cacheTtlMinutes = Number(($("#cacheTtl") as HTMLInputElement).value) || settings.cacheTtlMinutes;
   settings.llmTopN = Number(($("#llmTopN") as HTMLInputElement).value) || settings.llmTopN;
+  settings.openOnStartup = ($("#openOnStartup") as HTMLInputElement).checked;
   await saveSettings(settings);
   $("#settingsPanel").classList.add("hidden");
   run(true);

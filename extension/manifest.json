@@ -3,7 +3,7 @@
   "name": "GitHub Topic Radar",
   "version": "0.1.0",
   "description": "Curate GitHub's trending projects, issues and PRs by your own custom keyword topics (LLM, MCP, Skills, or anything).",
-  "permissions": ["storage", "identity"],
+  "permissions": ["storage", "identity", "tabs"],
   "host_permissions": [
     "https://api.github.com/*",
     "https://github.com/*"
@@ -14,8 +14,7 @@
     "https://*/*"
   ],
   "action": {
-    "default_title": "GitHub Topic Radar",
-    "default_popup": "popup.html",
+    "default_title": "GitHub Topic Radar (열기)",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",

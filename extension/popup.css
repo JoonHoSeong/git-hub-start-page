@@ -122,6 +122,8 @@ body {
 fieldset { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; }
 legend { color: var(--muted); padding: 0 6px; }
 label { display: block; margin: 8px 0; color: var(--muted); }
+.checkbox-row { display: flex; align-items: center; gap: 8px; }
+.checkbox-row input { width: auto; margin: 0; }
 input {
   width: 100%;
   margin-top: 3px;
