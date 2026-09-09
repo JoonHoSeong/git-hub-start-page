@@ -21,7 +21,7 @@ await build({
 });
 
 // Copy static assets alongside the bundles.
-for (const file of ["manifest.json", "popup.html", "popup.css"]) {
+for (const file of ["manifest.json", "popup.html", "newtab.html", "popup.css"]) {
   await cp(`extension/${file}`, `${OUT}/${file}`);
 }
 if (existsSync("extension/icons")) {

@@ -63,13 +63,15 @@ export function buildRepoQuery(topic: TopicRecipe, now: Date = new Date()): stri
  * Build one query per official topic tag (each is precise and non-empty).
  * Callers can run these in parallel and merge, giving OR-across-topics behavior
  * without the zero-result AND problem.
+ *
+ * IMPORTANT: only search qualifiers (stars/pushed) are appended. Free-text
+ * exclusion terms (e.g. `-course`) are intentionally NOT added here: mixing a
+ * negated text term with a `topic:`-only query makes GitHub return zero results
+ * (verified against the live API). Exclusions are applied client-side after
+ * fetching via `applyExclusions`.
  */
 export function buildTopicQueries(topic: TopicRecipe, now: Date = new Date()): string[] {
   const tail: string[] = [];
-  for (const ex of topic.exclude) {
-    const q = quoteIfPhrase(ex);
-    if (q) tail.push(`-${q}`);
-  }
   if (topic.minStars > 0) tail.push(`stars:>=${topic.minStars}`);
   if (topic.recentDays > 0) tail.push(`pushed:>${recentCutoff(topic.recentDays, now)}`);
   const suffix = tail.length ? ` ${tail.join(" ")}` : "";

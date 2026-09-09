@@ -114,12 +114,23 @@ export async function searchRepos(
   );
 
   const byId = new Map<string, RadarItem>();
+  let anyFulfilled = false;
+  const errors: string[] = [];
   for (const r of settled) {
-    if (r.status !== "fulfilled") continue;
+    if (r.status !== "fulfilled") {
+      errors.push(r.reason instanceof Error ? r.reason.message : String(r.reason));
+      continue;
+    }
+    anyFulfilled = true;
     for (const repo of r.value.items) {
       const item = repoToItem(repo);
       if (!byId.has(item.id)) byId.set(item.id, item);
     }
+  }
+  // If every query failed (e.g. rate limit, auth), surface the error instead of
+  // silently returning an empty list that looks like "no results".
+  if (!anyFulfilled && errors.length > 0) {
+    throw new Error(`GitHub repo search failed: ${errors[0]}`);
   }
   return [...byId.values()];
 }

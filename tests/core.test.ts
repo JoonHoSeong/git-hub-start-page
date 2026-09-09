@@ -7,7 +7,7 @@ import {
   recentCutoff,
   repoSearchUrl,
 } from "../extension/src/query-builder.ts";
-import { computeScore, rankItems } from "../extension/src/ranking.ts";
+import { computeScore, rankItems, applyExclusions } from "../extension/src/ranking.ts";
 import type { RadarItem, TopicRecipe } from "../extension/src/types.ts";
 
 const NOW = new Date("2026-09-09T00:00:00Z");
@@ -44,12 +44,13 @@ test("buildRepoQuery falls back to a single topic when no include text", () => {
   assert.ok(q.includes("topic:mcp"), "uses first topic");
 });
 
-test("buildTopicQueries yields one precise query per topic tag with filters", () => {
+test("buildTopicQueries yields one precise query per topic tag with qualifiers only", () => {
   const queries = buildTopicQueries(mcp, NOW);
   assert.equal(queries.length, 2, "one per githubTopic");
   assert.ok(queries[0].startsWith("topic:mcp"), "first topic");
   assert.ok(queries.every((q) => q.includes("stars:>=5")), "carries min stars");
-  assert.ok(queries.every((q) => q.includes("-minecraft")), "carries exclusions");
+  // Text exclusions must NOT be in the query (they zero out topic-only search).
+  assert.ok(queries.every((q) => !q.includes("-minecraft")), "no text exclusions in query");
 });
 
 test("recentCutoff computes date N days before now", () => {
@@ -138,4 +139,22 @@ test("rankItems sorts by descending score", () => {
   for (let i = 1; i < ranked.length; i++) {
     assert.ok(ranked[i - 1].score >= ranked[i].score, "monotonic descending");
   }
+});
+
+test("applyExclusions drops items matching exclude terms across name/desc/topics", () => {
+  const items = [
+    item({ id: "keep", repoFullName: "acme/mcp-gateway", description: "an MCP server" }),
+    item({ id: "drop-name", repoFullName: "mojang/minecraft-mcp", description: "bridge" }),
+    item({ id: "drop-desc", repoFullName: "acme/thing", description: "a Minecraft mod using mcp" }),
+  ];
+  const out = applyExclusions(items, mcp); // mcp.exclude includes "minecraft"
+  const ids = out.map((i) => i.id);
+  assert.deepEqual(ids, ["keep"], `only non-excluded kept, got: ${ids.join(",")}`);
+});
+
+test("applyExclusions is a no-op when there are no exclude terms", () => {
+  const noExclude: TopicRecipe = { ...mcp, exclude: [] };
+  const items = [item({ id: "a" }), item({ id: "b" })];
+  const out = applyExclusions(items, noExclude);
+  assert.equal(out.length, 2);
 });
