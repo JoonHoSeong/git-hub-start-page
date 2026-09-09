@@ -1,0 +1,11 @@
+name = "github-topic-radar-oauth"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+# Set secrets (do NOT put them here):
+#   wrangler secret put GITHUB_CLIENT_ID
+#   wrangler secret put GITHUB_CLIENT_SECRET
+#
+# Optionally lock CORS to your extension id:
+[vars]
+# ALLOWED_ORIGIN = "chrome-extension://<your-extension-id>"

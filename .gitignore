@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+
+# build output / artifacts
+extension/dist/
+dist/
+*.tsbuildinfo
+
+# logs
+*.log
+npm-debug.log*
+
+# cloudflare worker local state
+.wrangler/
+
+# scratch / temp working files
+*.tmp
+scratch/
+tmp/
+gen-queries.*
+
+# secrets / local env (never commit)
+.env
+.env.*
+.dev.vars
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
