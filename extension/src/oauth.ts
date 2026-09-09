@@ -2,12 +2,15 @@ import { saveToken } from "./storage.js";
 
 /**
  * OAuth config. CLIENT_ID is public and safe to ship. The client_secret lives
- * only in the Cloudflare Worker at TOKEN_EXCHANGE_URL.
- * Replace these two constants after registering the OAuth App and deploying the
- * worker (see worker/README.md).
+ * only in the Cloudflare Worker at TOKEN_EXCHANGE_URL (injected via
+ * `wrangler secret put`, never committed).
+ *
+ * `clientId` is set. After deploying the worker, replace `tokenExchangeUrl`
+ * with the deployed URL (`https://<name>.<subdomain>.workers.dev/exchange`).
+ * See worker/README.md.
  */
 export const OAUTH = {
-  clientId: "REPLACE_WITH_GITHUB_OAUTH_CLIENT_ID",
+  clientId: "Ov23liHYtI7Eof0VXlnv",
   tokenExchangeUrl: "https://github-topic-radar-oauth.YOUR-SUBDOMAIN.workers.dev/exchange",
   scopes: ["public_repo"], // enough to read/write stars on public repos
 };
