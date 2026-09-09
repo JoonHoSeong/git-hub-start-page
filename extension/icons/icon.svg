@@ -1,0 +1,46 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#161b22"/>
+      <stop offset="1" stop-color="#0d1117"/>
+    </linearGradient>
+    <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2f81f7" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#2f81f7" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="trend" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#3fb950"/>
+      <stop offset="1" stop-color="#56d364"/>
+    </linearGradient>
+  </defs>
+
+  <!-- rounded background -->
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#bg)" stroke="#30363d" stroke-width="2"/>
+
+  <!-- radar center -->
+  <g transform="translate(64,66)">
+    <!-- concentric range rings -->
+    <circle r="44" fill="none" stroke="#2f81f7" stroke-opacity="0.18" stroke-width="2"/>
+    <circle r="30" fill="none" stroke="#2f81f7" stroke-opacity="0.22" stroke-width="2"/>
+    <circle r="16" fill="none" stroke="#2f81f7" stroke-opacity="0.28" stroke-width="2"/>
+
+    <!-- sweep wedge -->
+    <path d="M0 0 L44 0 A44 44 0 0 0 12.9 -42.1 Z" fill="url(#sweep)"/>
+    <!-- sweep leading edge -->
+    <line x1="0" y1="0" x2="44" y2="0" stroke="#58a6ff" stroke-width="2.5" stroke-linecap="round"/>
+
+    <!-- rising trend line -->
+    <polyline points="-34,26 -14,10 2,16 20,-10 36,-26"
+      fill="none" stroke="url(#trend)" stroke-width="6"
+      stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- trend arrow head -->
+    <polyline points="26,-26 36,-26 36,-16"
+      fill="none" stroke="#56d364" stroke-width="6"
+      stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- detected blips -->
+    <circle cx="20" cy="-10" r="4.5" fill="#56d364"/>
+    <circle cx="-14" cy="10" r="3.5" fill="#58a6ff"/>
+    <circle cx="0" cy="0" r="3.5" fill="#e6edf3"/>
+  </g>
+</svg>
