@@ -53,7 +53,7 @@ function renderTabs(): void {
   // Favorites pseudo-tab (shows the user's GitHub-starred repos).
   const fav = document.createElement("button");
   fav.className = "tab tab-fav" + (activeTopicId === FAVORITES_ID ? " active" : "");
-  fav.textContent = "⭐ 즐겨찾기";
+  fav.textContent = "🔖 북마크";
   fav.onclick = () => selectTopic(FAVORITES_ID);
   nav.appendChild(fav);
 }
@@ -106,45 +106,34 @@ function card(item: RadarItem): HTMLElement {
       ${stars}${disc}
       <span class="meta-item" title="마지막 업데이트 시각">업데이트 ${relativeTime(item.updatedAt)}</span>
       <span class="meta-item" title="최근 상승세(momentum) 점수">🔥 ${item.score.toFixed(0)}</span>
-      <button class="star-btn" title="즐겨찾기 — GitHub Star로 저장">☆</button>
+      <button class="star-btn" title="북마크 (이 앱에만 저장)">🔖</button>
     </div>`;
-  const starBtn = el.querySelector<HTMLButtonElement>(".star-btn")!;
-  if (item.kind === "repository") {
-    void refreshStarState(item.repoFullName, starBtn);
-    starBtn.onclick = () => toggleStar(item.repoFullName, starBtn);
-  } else {
-    starBtn.style.display = "none";
-  }
+  const bmBtn = el.querySelector<HTMLButtonElement>(".star-btn")!;
+  void refreshBookmarkState(item.id, bmBtn);
+  bmBtn.onclick = () => toggleBookmark(item, bmBtn);
   return el;
 }
 
-async function refreshStarState(repo: string, btn: HTMLButtonElement): Promise<void> {
+async function refreshBookmarkState(id: string, btn: HTMLButtonElement): Promise<void> {
   try {
-    const res = await send<{ starred: boolean; needsAuth?: boolean }>({ type: "isStarred", repoFullName: repo });
-    if (res.needsAuth) return;
-    btn.textContent = res.starred ? "★" : "☆";
-    btn.classList.toggle("starred", res.starred);
+    const res = await send<{ bookmarked: boolean }>({ type: "isBookmarked", id });
+    btn.classList.toggle("starred", res.bookmarked);
+    btn.textContent = res.bookmarked ? "🔖" : "🏷️";
   } catch {
     /* ignore */
   }
 }
 
-async function toggleStar(repo: string, btn: HTMLButtonElement): Promise<void> {
-  const wantStar = !btn.classList.contains("starred");
+async function toggleBookmark(item: RadarItem, btn: HTMLButtonElement): Promise<void> {
+  const add = !btn.classList.contains("starred");
   try {
-    const res = await send<{ needsAuth?: boolean; starred?: boolean }>({
-      type: "toggleStar",
-      repoFullName: repo,
-      star: wantStar,
-    });
-    if (res.needsAuth) {
-      alert("즐겨찾기는 GitHub 로그인이 필요합니다.");
-      return;
-    }
-    btn.textContent = wantStar ? "★" : "☆";
-    btn.classList.toggle("starred", wantStar);
+    await send<{ ok: boolean; bookmarked: boolean }>({ type: "toggleBookmark", item, add });
+    btn.classList.toggle("starred", add);
+    btn.textContent = add ? "🔖" : "🏷️";
+    // If we're viewing the favorites tab, refresh so removed items disappear.
+    if (activeTopicId === FAVORITES_ID && !add) run(false);
   } catch (e) {
-    alert("별표 실패: " + (e as Error).message);
+    alert("북마크 실패: " + (e as Error).message);
   }
 }
 
@@ -154,14 +143,10 @@ async function run(forceRefresh = false): Promise<void> {
 
   if (activeTopicId === FAVORITES_ID) {
     try {
-      const data = await send<{ items: RadarItem[]; needsAuth?: boolean }>({ type: "favorites" });
+      const data = await send<{ items: RadarItem[] }>({ type: "favorites" });
       results.innerHTML = "";
-      if (data.needsAuth) {
-        results.innerHTML = `<div class="empty">즐겨찾기는 GitHub 로그인이 필요합니다.<br/>우측 상단 "로그인"을 눌러주세요.</div>`;
-        return;
-      }
       if (data.items.length === 0) {
-        results.innerHTML = `<div class="empty">아직 별표한 저장소가 없습니다.<br/>카드의 ☆를 눌러 즐겨찾기에 추가하세요.</div>`;
+        results.innerHTML = `<div class="empty">아직 북마크한 항목이 없습니다.<br/>카드의 🏷️를 눌러 북마크에 추가하세요.</div>`;
         return;
       }
       for (const item of data.items) results.appendChild(card(item));

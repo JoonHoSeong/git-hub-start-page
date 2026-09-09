@@ -1,7 +1,17 @@
 import { runTopic } from "./pipeline.js";
-import { loadSettings, loadToken, loadTopics, saveToken } from "./storage.js";
+import {
+  loadSettings,
+  loadToken,
+  loadTopics,
+  saveToken,
+  loadBookmarks,
+  addBookmark,
+  removeBookmark,
+  isBookmarked,
+} from "./storage.js";
 import { login, logout } from "./oauth.js";
-import { getViewer, isStarred, listStarred, starRepo, unstarRepo } from "./github.js";
+import { getViewer } from "./github.js";
+import type { RadarItem } from "./types.js";
 
 type Msg =
   | { type: "runTopic"; topicId: string; forceRefresh?: boolean }
@@ -9,8 +19,8 @@ type Msg =
   | { type: "logout" }
   | { type: "viewer" }
   | { type: "favorites" }
-  | { type: "toggleStar"; repoFullName: string; star: boolean }
-  | { type: "isStarred"; repoFullName: string };
+  | { type: "toggleBookmark"; item: RadarItem; add: boolean }
+  | { type: "isBookmarked"; id: string };
 
 async function handle(msg: Msg): Promise<unknown> {
   switch (msg.type) {
@@ -44,22 +54,17 @@ async function handle(msg: Msg): Promise<unknown> {
         return { viewer: null };
       }
     }
-    case "isStarred": {
-      const token = await loadToken();
-      if (!token) return { starred: false, needsAuth: true };
-      return { starred: await isStarred(msg.repoFullName, token) };
+    case "isBookmarked": {
+      return { bookmarked: await isBookmarked(msg.id) };
     }
     case "favorites": {
-      const token = await loadToken();
-      if (!token) return { needsAuth: true, items: [] };
-      return { items: await listStarred(token) };
+      // Local bookmarks only (app-only; not GitHub stars).
+      return { items: await loadBookmarks() };
     }
-    case "toggleStar": {
-      const token = await loadToken();
-      if (!token) return { needsAuth: true };
-      if (msg.star) await starRepo(msg.repoFullName, token);
-      else await unstarRepo(msg.repoFullName, token);
-      return { ok: true, starred: msg.star };
+    case "toggleBookmark": {
+      if (msg.add) await addBookmark(msg.item);
+      else await removeBookmark(msg.item.id);
+      return { ok: true, bookmarked: msg.add };
     }
     default:
       throw new Error("Unknown message");
