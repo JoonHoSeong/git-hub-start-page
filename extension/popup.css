@@ -147,6 +147,8 @@ body {
   color: var(--text);
   box-shadow: 0 2px 12px var(--accent-dim);
 }
+.tab-fav { margin-left: auto; }
+.tab-fav.active { box-shadow: 0 2px 12px rgba(240, 198, 116, 0.28); border-color: var(--star); }
 
 /* ---- source chips ---- */
 .source-chips { display: flex; gap: 8px; padding: 10px 14px; }
@@ -207,7 +209,16 @@ body {
   margin: 7px 0;
   font-size: 12px;
 }
-.card-meta { display: flex; gap: 12px; color: var(--muted); font-size: 11px; align-items: center; flex-wrap: wrap; }
+.card-meta {
+  display: flex;
+  gap: 6px 14px;
+  color: var(--muted);
+  font-size: 11px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.meta-item { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .star-btn {
   margin-left: auto;
   background: none;
@@ -322,13 +333,19 @@ body.fulltab .results {
   max-height: none;
   padding: 10px 36px 56px;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 18px;
   align-content: start;
-  max-width: 1400px;
+  max-width: 1500px;
   margin: 0 auto;
   width: 100%;
 }
+/* Grid density: user-adjustable card size / column count. */
+body.fulltab.density-comfortable .results { grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 20px; }
+body.fulltab.density-cozy .results        { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+body.fulltab.density-compact .results     { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+body.fulltab.density-comfortable .card { padding: 18px 20px; }
+body.fulltab.density-compact .card { padding: 12px 14px; }
 body.fulltab .empty,
 body.fulltab .loading { grid-column: 1 / -1; padding: 90px 0; font-size: 15px; }
 body.fulltab .card { margin-bottom: 0; }

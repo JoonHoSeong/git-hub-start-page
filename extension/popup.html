@@ -42,6 +42,13 @@
             <option value="light">라이트</option>
           </select>
         </label>
+        <label>카드 크기 / 그리드 밀도
+          <select id="density">
+            <option value="comfortable">크게 (열 적음)</option>
+            <option value="cozy">보통</option>
+            <option value="compact">촘촘하게 (열 많음)</option>
+          </select>
+        </label>
         <label>캐시 유지(분) <input id="cacheTtl" type="number" min="1" max="240" /></label>
         <label>LLM 검증 상위 N개 <input id="llmTopN" type="number" min="1" max="50" /></label>
       </fieldset>

@@ -38,6 +38,8 @@ function relativeTime(iso: string): string {
   return `${Math.floor(days / 30)}개월 전`;
 }
 
+const FAVORITES_ID = "__favorites__";
+
 function renderTabs(): void {
   const nav = $("#tabs");
   nav.innerHTML = "";
@@ -48,12 +50,19 @@ function renderTabs(): void {
     btn.onclick = () => selectTopic(t.id);
     nav.appendChild(btn);
   }
+  // Favorites pseudo-tab (shows the user's GitHub-starred repos).
+  const fav = document.createElement("button");
+  fav.className = "tab tab-fav" + (activeTopicId === FAVORITES_ID ? " active" : "");
+  fav.textContent = "🔖 북마크";
+  fav.onclick = () => selectTopic(FAVORITES_ID);
+  nav.appendChild(fav);
 }
 
 function renderSourceChips(): void {
-  const topic = topics.find((t) => t.id === activeTopicId);
   const box = $("#sourceChips");
   box.innerHTML = "";
+  if (activeTopicId === FAVORITES_ID) return;
+  const topic = topics.find((t) => t.id === activeTopicId);
   if (!topic) return;
   const defs: [keyof TopicRecipe["sources"], string][] = [
     ["repositories", "Repos"],
@@ -81,10 +90,10 @@ function card(item: RadarItem): HTMLElement {
   const summary = item.summary
     ? `<div class="card-summary">💡 ${escapeHtml(item.summary)}</div>`
     : "";
-  const stars = item.kind === "repository" ? `<span>★ ${item.stars.toLocaleString()}</span>` : "";
+  const stars = item.kind === "repository" ? `<span class="meta-item">⭐ ${item.stars.toLocaleString()}</span>` : "";
   const disc =
     item.kind !== "repository"
-      ? `<span>💬 ${item.comments}</span><span>👍 ${item.reactions}</span>`
+      ? `<span class="meta-item">💬 ${item.comments}</span><span class="meta-item">👍 ${item.reactions}</span>`
       : "";
   el.innerHTML = `
     <div class="card-head">
@@ -95,53 +104,58 @@ function card(item: RadarItem): HTMLElement {
     ${summary}
     <div class="card-meta">
       ${stars}${disc}
-      <span>⏱ ${relativeTime(item.updatedAt)}</span>
-      <span title="momentum score">🔥 ${item.score.toFixed(0)}</span>
-      <button class="star-btn" title="즐겨찾기(GitHub star)">☆</button>
+      <span class="meta-item" title="마지막 업데이트 시각">업데이트 ${relativeTime(item.updatedAt)}</span>
+      <span class="meta-item" title="최근 상승세(momentum) 점수">🔥 ${item.score.toFixed(0)}</span>
+      <button class="star-btn" title="북마크 (이 앱에만 저장)">🔖</button>
     </div>`;
-  const starBtn = el.querySelector<HTMLButtonElement>(".star-btn")!;
-  if (item.kind === "repository") {
-    void refreshStarState(item.repoFullName, starBtn);
-    starBtn.onclick = () => toggleStar(item.repoFullName, starBtn);
-  } else {
-    starBtn.style.display = "none";
-  }
+  const bmBtn = el.querySelector<HTMLButtonElement>(".star-btn")!;
+  void refreshBookmarkState(item.id, bmBtn);
+  bmBtn.onclick = () => toggleBookmark(item, bmBtn);
   return el;
 }
 
-async function refreshStarState(repo: string, btn: HTMLButtonElement): Promise<void> {
+async function refreshBookmarkState(id: string, btn: HTMLButtonElement): Promise<void> {
   try {
-    const res = await send<{ starred: boolean; needsAuth?: boolean }>({ type: "isStarred", repoFullName: repo });
-    if (res.needsAuth) return;
-    btn.textContent = res.starred ? "★" : "☆";
-    btn.classList.toggle("starred", res.starred);
+    const res = await send<{ bookmarked: boolean }>({ type: "isBookmarked", id });
+    btn.classList.toggle("starred", res.bookmarked);
+    btn.textContent = res.bookmarked ? "🔖" : "🏷️";
   } catch {
     /* ignore */
   }
 }
 
-async function toggleStar(repo: string, btn: HTMLButtonElement): Promise<void> {
-  const wantStar = !btn.classList.contains("starred");
+async function toggleBookmark(item: RadarItem, btn: HTMLButtonElement): Promise<void> {
+  const add = !btn.classList.contains("starred");
   try {
-    const res = await send<{ needsAuth?: boolean; starred?: boolean }>({
-      type: "toggleStar",
-      repoFullName: repo,
-      star: wantStar,
-    });
-    if (res.needsAuth) {
-      alert("즐겨찾기는 GitHub 로그인이 필요합니다.");
-      return;
-    }
-    btn.textContent = wantStar ? "★" : "☆";
-    btn.classList.toggle("starred", wantStar);
+    await send<{ ok: boolean; bookmarked: boolean }>({ type: "toggleBookmark", item, add });
+    btn.classList.toggle("starred", add);
+    btn.textContent = add ? "🔖" : "🏷️";
+    // If we're viewing the favorites tab, refresh so removed items disappear.
+    if (activeTopicId === FAVORITES_ID && !add) run(false);
   } catch (e) {
-    alert("별표 실패: " + (e as Error).message);
+    alert("북마크 실패: " + (e as Error).message);
   }
 }
 
 async function run(forceRefresh = false): Promise<void> {
   const results = $("#results");
   results.innerHTML = `<div class="loading">불러오는 중…</div>`;
+
+  if (activeTopicId === FAVORITES_ID) {
+    try {
+      const data = await send<{ items: RadarItem[] }>({ type: "favorites" });
+      results.innerHTML = "";
+      if (data.items.length === 0) {
+        results.innerHTML = `<div class="empty">아직 북마크한 항목이 없습니다.<br/>카드의 🏷️를 눌러 북마크에 추가하세요.</div>`;
+        return;
+      }
+      for (const item of data.items) results.appendChild(card(item));
+    } catch (e) {
+      results.innerHTML = `<div class="empty">오류: ${escapeHtml((e as Error).message)}</div>`;
+    }
+    return;
+  }
+
   try {
     const data = await send<RunResult>({ type: "runTopic", topicId: activeTopicId, forceRefresh });
     results.innerHTML = "";
@@ -171,6 +185,7 @@ function openSettings(): void {
   ($("#cacheTtl") as HTMLInputElement).value = String(settings.cacheTtlMinutes);
   ($("#llmTopN") as HTMLInputElement).value = String(settings.llmTopN);
   ($("#theme") as HTMLSelectElement).value = settings.theme;
+  ($("#density") as HTMLSelectElement).value = settings.density;
   renderTopicManager();
   $("#settingsPanel").classList.remove("hidden");
 }
@@ -233,7 +248,9 @@ async function saveSettingsFromForm(): Promise<void> {
   settings.cacheTtlMinutes = Number(($("#cacheTtl") as HTMLInputElement).value) || settings.cacheTtlMinutes;
   settings.llmTopN = Number(($("#llmTopN") as HTMLInputElement).value) || settings.llmTopN;
   settings.theme = ($("#theme") as HTMLSelectElement).value as AppSettings["theme"];
+  settings.density = ($("#density") as HTMLSelectElement).value as AppSettings["density"];
   applyTheme(settings.theme);
+  applyDensity(settings.density);
   await saveSettings(settings);
   $("#settingsPanel").classList.add("hidden");
   run(true);
@@ -273,9 +290,17 @@ function applyTheme(theme: AppSettings["theme"]): void {
   body.classList.add(`theme-${theme}`);
 }
 
+/** Apply the grid density by toggling a class on <body>. */
+function applyDensity(density: AppSettings["density"]): void {
+  const body = document.body;
+  body.classList.remove("density-comfortable", "density-cozy", "density-compact");
+  body.classList.add(`density-${density}`);
+}
+
 async function init(): Promise<void> {
   [topics, settings] = await Promise.all([loadTopics(), loadSettings()]);
   applyTheme(settings.theme);
+  applyDensity(settings.density);
   activeTopicId = topics[0]?.id ?? "";
   renderTabs();
   renderSourceChips();

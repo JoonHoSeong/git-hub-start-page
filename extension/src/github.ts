@@ -187,3 +187,17 @@ export async function unstarRepo(repoFullName: string, token: string): Promise<v
 export async function getViewer(token: string): Promise<{ login: string; avatar_url: string }> {
   return getJson(`${GITHUB_API}/user`, token);
 }
+
+/**
+ * List the authenticated user's starred repositories (most recently starred
+ * first). Used by the Favorites view. Returns up to `perPage` items.
+ */
+export async function listStarred(token: string, perPage = 100): Promise<RadarItem[]> {
+  const params = new URLSearchParams({
+    sort: "created",
+    direction: "desc",
+    per_page: String(perPage),
+  });
+  const data = await getJson<RepoApi[]>(`${GITHUB_API}/user/starred?${params.toString()}`, token);
+  return data.map(repoToItem);
+}
