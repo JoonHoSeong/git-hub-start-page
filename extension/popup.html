@@ -35,6 +35,13 @@
       </fieldset>
       <fieldset>
         <legend>일반</legend>
+        <label>테마
+          <select id="theme">
+            <option value="auto">시스템 설정 따름</option>
+            <option value="dark">다크</option>
+            <option value="light">라이트</option>
+          </select>
+        </label>
         <label>캐시 유지(분) <input id="cacheTtl" type="number" min="1" max="240" /></label>
         <label>LLM 검증 상위 N개 <input id="llmTopN" type="number" min="1" max="50" /></label>
       </fieldset>

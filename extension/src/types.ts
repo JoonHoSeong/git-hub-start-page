@@ -69,6 +69,8 @@ export interface AppSettings {
   cacheTtlMinutes: number;
   /** How many top items to send through the LLM tier. */
   llmTopN: number;
+  /** Color theme: follow OS ("auto"), or force "dark"/"light". */
+  theme: "auto" | "dark" | "light";
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -76,4 +78,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   defaultSources: { repositories: true, issues: false, pullRequests: false },
   cacheTtlMinutes: 30,
   llmTopN: 15,
+  theme: "auto",
 };

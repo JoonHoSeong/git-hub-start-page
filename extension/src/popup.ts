@@ -170,6 +170,7 @@ function openSettings(): void {
   ($("#llmModel") as HTMLInputElement).value = settings.llm.model;
   ($("#cacheTtl") as HTMLInputElement).value = String(settings.cacheTtlMinutes);
   ($("#llmTopN") as HTMLInputElement).value = String(settings.llmTopN);
+  ($("#theme") as HTMLSelectElement).value = settings.theme;
   renderTopicManager();
   $("#settingsPanel").classList.remove("hidden");
 }
@@ -231,6 +232,8 @@ async function saveSettingsFromForm(): Promise<void> {
   settings.llm.model = ($("#llmModel") as HTMLInputElement).value.trim() || settings.llm.model;
   settings.cacheTtlMinutes = Number(($("#cacheTtl") as HTMLInputElement).value) || settings.cacheTtlMinutes;
   settings.llmTopN = Number(($("#llmTopN") as HTMLInputElement).value) || settings.llmTopN;
+  settings.theme = ($("#theme") as HTMLSelectElement).value as AppSettings["theme"];
+  applyTheme(settings.theme);
   await saveSettings(settings);
   $("#settingsPanel").classList.add("hidden");
   run(true);
@@ -263,8 +266,16 @@ async function updateAuthButton(): Promise<void> {
   }
 }
 
+/** Apply the color theme by toggling a class on <body>. */
+function applyTheme(theme: AppSettings["theme"]): void {
+  const body = document.body;
+  body.classList.remove("theme-auto", "theme-dark", "theme-light");
+  body.classList.add(`theme-${theme}`);
+}
+
 async function init(): Promise<void> {
   [topics, settings] = await Promise.all([loadTopics(), loadSettings()]);
+  applyTheme(settings.theme);
   activeTopicId = topics[0]?.id ?? "";
   renderTabs();
   renderSourceChips();
