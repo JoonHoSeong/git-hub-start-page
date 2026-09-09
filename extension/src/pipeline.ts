@@ -33,28 +33,42 @@ export async function runTopic(
   topic: TopicRecipe,
   settings: AppSettings,
   token?: string,
-  opts: { forceRefresh?: boolean } = {},
+  opts: { forceRefresh?: boolean; subtopicId?: string } = {},
 ): Promise<RunResult> {
+  // If a subtopic is active, narrow the search to its topic tags and add any
+  // extra exclusions. Uses a separate cache key so subtopic results are cached
+  // independently of the parent topic.
+  const sub = opts.subtopicId
+    ? topic.subtopics?.find((s) => s.id === opts.subtopicId)
+    : undefined;
+  const effectiveTopic: TopicRecipe = sub
+    ? {
+        ...topic,
+        githubTopics: sub.githubTopics,
+        exclude: [...topic.exclude, ...(sub.exclude ?? [])],
+      }
+    : topic;
+  const cacheKey = sub ? `${topic.id}::${sub.id}` : topic.id;
+
   if (!opts.forceRefresh) {
-    const cached = await getCache<RadarItem[]>(topic.id, settings.cacheTtlMinutes);
+    const cached = await getCache<RadarItem[]>(cacheKey, settings.cacheTtlMinutes);
     if (cached) return { items: cached, fromCache: true, llmApplied: false };
   }
 
-  const raw = await fetchTopic(topic, token);
-  const filtered = applyExclusions(dedupe(raw), topic);
-  const ranked = rankItems(filtered, topic);
+  const raw = await fetchTopic(effectiveTopic, token);
+  const filtered = applyExclusions(dedupe(raw), effectiveTopic);
+  const ranked = rankItems(filtered, effectiveTopic);
 
   const hasLlm = Boolean(settings.llm.apiKey) || /localhost|127\.0\.0\.1/.test(settings.llm.baseUrl);
   let llmApplied = false;
   if (hasLlm) {
-    await enrichWithLlm(ranked, topic, settings.llm, settings.llmTopN);
+    await enrichWithLlm(ranked, effectiveTopic, settings.llm, settings.llmTopN);
     llmApplied = true;
-    // Drop items the LLM judged irrelevant (only within the checked top-N).
     const relevant = ranked.filter((it) => it.relevant !== false);
-    await setCache(topic.id, relevant);
+    await setCache(cacheKey, relevant);
     return { items: relevant, fromCache: false, llmApplied };
   }
 
-  await setCache(topic.id, ranked);
+  await setCache(cacheKey, ranked);
   return { items: ranked, fromCache: false, llmApplied };
 }

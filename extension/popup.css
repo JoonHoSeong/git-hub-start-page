@@ -165,6 +165,9 @@ body {
   -webkit-backdrop-filter: blur(6px);
 }
 .chip.on { background: var(--accent-dim); border-color: var(--accent); color: var(--text); }
+.chip.sub { font-size: 11px; opacity: .95; }
+.chip-divider { width: 1px; align-self: stretch; background: var(--glass-border); margin: 0 4px; }
+.source-chips { flex-wrap: wrap; align-items: center; }
 
 /* ---- results ---- */
 .results { padding: 6px 14px 16px; overflow-y: auto; max-height: 460px; }
@@ -200,6 +203,17 @@ body {
   height: fit-content;
 }
 .card-desc { color: var(--text); opacity: .92; margin: 7px 0; line-height: 1.45; }
+.orig-toggle {
+  font-size: 10px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--muted);
+  cursor: pointer;
+  vertical-align: middle;
+}
+.orig-toggle:hover { border-color: var(--accent); color: var(--text); }
 .card-summary {
   color: var(--text);
   background: linear-gradient(135deg, var(--accent-dim), transparent);
