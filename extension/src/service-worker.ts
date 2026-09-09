@@ -94,10 +94,9 @@ chrome.action.onClicked.addListener(() => {
   void openFullPage();
 });
 
-// On browser startup, optionally open the full page (user-toggleable setting).
-chrome.runtime.onStartup.addListener(() => {
-  void (async () => {
-    const settings = await loadSettings();
-    if (settings.openOnStartup) await openFullPage();
-  })();
+// Open once on first install (first entry), not on every new tab or startup.
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === "install") {
+    void openFullPage();
+  }
 });

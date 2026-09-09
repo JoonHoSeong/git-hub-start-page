@@ -1,4 +1,5 @@
 :root {
+:root, body.theme-dark {
   --bg: #0d1117;
   --panel: #161b22;
   --border: #30363d;
@@ -7,6 +8,30 @@
   --accent: #2f81f7;
   --accent-dim: #1f6feb33;
   --star: #e3b341;
+}
+body.theme-light {
+  --bg: #ffffff;
+  --panel: #f6f8fa;
+  --border: #d0d7de;
+  --text: #1f2328;
+  --muted: #59636e;
+  --accent: #0969da;
+  --accent-dim: #0969da1a;
+  --star: #9a6700;
+}
+/* Auto: follow the OS. Dark variables are the default above; apply light
+   overrides only when the OS requests a light scheme and the user chose auto. */
+@media (prefers-color-scheme: light) {
+  body.theme-auto {
+    --bg: #ffffff;
+    --panel: #f6f8fa;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --muted: #59636e;
+    --accent: #0969da;
+    --accent-dim: #0969da1a;
+    --star: #9a6700;
+  }
 }
 * { box-sizing: border-box; }
 body {
@@ -125,6 +150,15 @@ label { display: block; margin: 8px 0; color: var(--muted); }
 .checkbox-row { display: flex; align-items: center; gap: 8px; }
 .checkbox-row input { width: auto; margin: 0; }
 input {
+  width: 100%;
+  margin-top: 3px;
+  padding: 6px 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+}
+select {
   width: 100%;
   margin-top: 3px;
   padding: 6px 8px;

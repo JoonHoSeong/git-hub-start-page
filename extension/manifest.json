@@ -22,9 +22,6 @@
       "128": "icons/icon128.png"
     }
   },
-  "chrome_url_overrides": {
-    "newtab": "newtab.html"
-  },
   "background": {
     "service_worker": "service-worker.js",
     "type": "module"
