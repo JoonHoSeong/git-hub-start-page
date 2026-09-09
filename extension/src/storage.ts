@@ -24,7 +24,32 @@ async function set(key: string, value: unknown): Promise<void> {
 }
 
 export async function loadTopics(): Promise<TopicRecipe[]> {
-  return get<TopicRecipe[]>(KEYS.topics, DEFAULT_TOPICS);
+  const stored = await get<TopicRecipe[] | null>(KEYS.topics, null);
+  if (!stored) return DEFAULT_TOPICS;
+
+  // Migration: refresh built-in presets to their latest definitions (e.g.
+  // improved topic tags) while preserving user-created custom topics and the
+  // user's current tab order. Preset identity is the stable `preset-*` id.
+  const latest = new Map(DEFAULT_TOPICS.map((t) => [t.id, t]));
+  const seen = new Set<string>();
+  const merged: TopicRecipe[] = [];
+  for (const t of stored) {
+    if (t.isPreset && latest.has(t.id)) {
+      // Replace the preset with the latest definition but keep the user's
+      // source toggles (they may have enabled issues/PRs for this topic).
+      merged.push({ ...latest.get(t.id)!, sources: t.sources });
+      seen.add(t.id);
+    } else {
+      merged.push(t);
+    }
+  }
+  // Add any newly introduced presets the user has never seen.
+  for (const preset of DEFAULT_TOPICS) {
+    if (!seen.has(preset.id) && !stored.some((s) => s.id === preset.id)) {
+      merged.push(preset);
+    }
+  }
+  return merged;
 }
 
 export async function saveTopics(topics: TopicRecipe[]): Promise<void> {

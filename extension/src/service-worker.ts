@@ -1,13 +1,14 @@
 import { runTopic } from "./pipeline.js";
 import { loadSettings, loadToken, loadTopics, saveToken } from "./storage.js";
 import { login, logout } from "./oauth.js";
-import { getViewer, isStarred, starRepo, unstarRepo } from "./github.js";
+import { getViewer, isStarred, listStarred, starRepo, unstarRepo } from "./github.js";
 
 type Msg =
   | { type: "runTopic"; topicId: string; forceRefresh?: boolean }
   | { type: "login" }
   | { type: "logout" }
   | { type: "viewer" }
+  | { type: "favorites" }
   | { type: "toggleStar"; repoFullName: string; star: boolean }
   | { type: "isStarred"; repoFullName: string };
 
@@ -47,6 +48,11 @@ async function handle(msg: Msg): Promise<unknown> {
       const token = await loadToken();
       if (!token) return { starred: false, needsAuth: true };
       return { starred: await isStarred(msg.repoFullName, token) };
+    }
+    case "favorites": {
+      const token = await loadToken();
+      if (!token) return { needsAuth: true, items: [] };
+      return { items: await listStarred(token) };
     }
     case "toggleStar": {
       const token = await loadToken();

@@ -71,6 +71,8 @@ export interface AppSettings {
   llmTopN: number;
   /** Color theme: follow OS ("auto"), or force "dark"/"light". */
   theme: "auto" | "dark" | "light";
+  /** Card grid density on the full page. */
+  density: "comfortable" | "cozy" | "compact";
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -79,4 +81,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   cacheTtlMinutes: 30,
   llmTopN: 15,
   theme: "auto",
+  density: "comfortable",
 };
