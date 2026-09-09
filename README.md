@@ -77,3 +77,17 @@ npm run build       # extension/dist 로 번들
 ## 설계 근거
 
 자세한 결정 사항은 [DESIGN.md](./DESIGN.md) 참고. 쿼리 전략은 실제 GitHub API 응답으로 검증했으며, 다중 `topic:` AND가 결과를 0으로 만드는 문제를 발견해 **topic별 병렬 쿼리 후 병합** 방식으로 수정했습니다.
+
+## 개발 규칙 (Governance)
+
+이 프로젝트는 Governance MCP 지침을 따릅니다. 지침 파일:
+- `.governance-policy.json` — 선택된 정책 도메인 (task/implementation, ai/llm-nlp, web/frontend, web/auth-realtime, language-runtime/javascript-typescript)
+- `.governance-additions.md` — 프로젝트별 사용자 규칙
+- `.governance-instructions.md` — 위 두 개를 합쳐 렌더된 실제 지침 (에이전트가 읽는 파일)
+
+브랜치 전략:
+- `main`에 직접 커밋하지 않습니다. 작업 단위마다 브랜치를 만듭니다: `feat/<slug>`, `fix/<slug>`, `chore/<slug>`, `docs/<slug>`.
+- `main`으로 PR을 올립니다. `main`은 항상 릴리스 가능 상태를 유지합니다.
+- 커밋 메시지는 Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
+- PR 전에 `npm run test`, `npm run typecheck`, `npm run build`를 실행하고 결과를 PR 설명에 포함합니다.
+- 빌드 산출물(`extension/dist/`), `node_modules/`, 시크릿은 커밋하지 않습니다.
