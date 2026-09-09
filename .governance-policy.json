@@ -1,0 +1,11 @@
+{
+  "format": 1,
+  "agent": "generic",
+  "selected_domains": [
+    "task/implementation",
+    "ai/llm-nlp",
+    "web/frontend",
+    "web/auth-realtime",
+    "language-runtime/javascript-typescript"
+  ]
+}
