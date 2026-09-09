@@ -7,7 +7,7 @@ import {
   recentCutoff,
   repoSearchUrl,
 } from "../extension/src/query-builder.ts";
-import { computeScore, rankItems, applyExclusions } from "../extension/src/ranking.ts";
+import { computeScore, rankItems, applyExclusions, sortItems } from "../extension/src/ranking.ts";
 import type { RadarItem, TopicRecipe } from "../extension/src/types.ts";
 
 const NOW = new Date("2026-09-09T00:00:00Z");
@@ -92,6 +92,7 @@ function item(partial: Partial<RadarItem>): RadarItem {
     url: "https://github.com/o/r",
     description: "",
     stars: 0,
+    forks: 0,
     createdAt: NOW.toISOString(),
     updatedAt: NOW.toISOString(),
     comments: 0,
@@ -157,4 +158,19 @@ test("applyExclusions is a no-op when there are no exclude terms", () => {
   const items = [item({ id: "a" }), item({ id: "b" })];
   const out = applyExclusions(items, noExclude);
   assert.equal(out.length, 2);
+});
+
+test("sortItems orders by stars, forks, and updated (descending)", () => {
+  const a = item({ id: "a", stars: 100, forks: 5, updatedAt: "2026-01-01T00:00:00Z" });
+  const b = item({ id: "b", stars: 50, forks: 40, updatedAt: "2026-09-01T00:00:00Z" });
+  const c = item({ id: "c", stars: 200, forks: 10, updatedAt: "2026-05-01T00:00:00Z" });
+
+  const byStars = sortItems([...[a, b, c]], mcp, "stars", NOW).map((i) => i.id);
+  assert.deepEqual(byStars, ["c", "a", "b"], "stars desc");
+
+  const byForks = sortItems([...[a, b, c]], mcp, "forks", NOW).map((i) => i.id);
+  assert.deepEqual(byForks, ["b", "c", "a"], "forks desc");
+
+  const byUpdated = sortItems([...[a, b, c]], mcp, "updated", NOW).map((i) => i.id);
+  assert.deepEqual(byUpdated, ["b", "c", "a"], "most recently updated first");
 });

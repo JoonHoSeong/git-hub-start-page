@@ -114,6 +114,7 @@ function card(item: RadarItem): HTMLElement {
     ? `<div class="card-summary">💡 ${escapeHtml(item.summary)}</div>`
     : "";
   const stars = item.kind === "repository" ? `<span class="meta-item">⭐ ${item.stars.toLocaleString()}</span>` : "";
+  const forks = item.kind === "repository" ? `<span class="meta-item">🍴 ${item.forks.toLocaleString()}</span>` : "";
   const disc =
     item.kind !== "repository"
       ? `<span class="meta-item">💬 ${item.comments}</span><span class="meta-item">👍 ${item.reactions}</span>`
@@ -126,7 +127,7 @@ function card(item: RadarItem): HTMLElement {
     ${item.description ? `<div class="card-desc">${escapeHtml(item.description)}</div>` : ""}
     ${summary}
     <div class="card-meta">
-      ${stars}${disc}
+      ${stars}${forks}${disc}
       <span class="meta-item" title="마지막 업데이트 시각">업데이트 ${relativeTime(item.updatedAt)}</span>
       <span class="meta-item" title="최근 상승세(momentum) 점수">🔥 ${item.score.toFixed(0)}</span>
       <button class="star-btn" title="북마크 (이 앱에만 저장)">🔖</button>
@@ -392,6 +393,15 @@ async function init(): Promise<void> {
   renderTabs();
   renderSourceChips();
   updateAuthButton();
+
+  const sortSel = $("#sortBy") as HTMLSelectElement;
+  sortSel.value = settings.sortBy;
+  sortSel.onchange = async () => {
+    settings.sortBy = sortSel.value as AppSettings["sortBy"];
+    await saveSettings(settings);
+    run(false); // cached items are re-sorted, no refetch needed
+  };
+
   if (activeTopicId) run(false);
 
   $("#refreshBtn").onclick = () => run(true);

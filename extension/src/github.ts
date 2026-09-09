@@ -18,6 +18,7 @@ interface RepoApi {
   html_url: string;
   description: string | null;
   stargazers_count: number;
+  forks_count: number;
   created_at: string;
   pushed_at: string;
   topics?: string[];
@@ -45,6 +46,7 @@ function repoToItem(r: RepoApi): RadarItem {
     url: r.html_url,
     description: r.description ?? "",
     stars: r.stargazers_count,
+    forks: r.forks_count ?? 0,
     createdAt: r.created_at,
     updatedAt: r.pushed_at,
     comments: 0,
@@ -64,6 +66,7 @@ function issueToItem(i: IssueApi): RadarItem {
     url: i.html_url,
     description: (i.body ?? "").slice(0, 280),
     stars: 0,
+    forks: 0,
     createdAt: i.created_at,
     updatedAt: i.updated_at,
     comments: i.comments,
@@ -73,11 +76,38 @@ function issueToItem(i: IssueApi): RadarItem {
   };
 }
 
-async function getJson<T>(url: string, token?: string): Promise<T> {
+class GitHubApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+    this.name = "GitHubApiError";
+  }
+}
+
+/**
+ * GET JSON from GitHub. If a token is provided and the server rejects it with
+ * 401 (bad/expired credentials), retry once anonymously so read-only search
+ * still works. Signals `authFailed` via the onAuthFail callback so the caller
+ * can clear the dead token.
+ */
+async function getJson<T>(
+  url: string,
+  token?: string,
+  onAuthFail?: () => void,
+): Promise<T> {
   const res = await fetch(url, { headers: headers(token) });
+  if (res.status === 401 && token) {
+    // Dead token: drop it and retry anonymously.
+    onAuthFail?.();
+    const anon = await fetch(url, { headers: headers() });
+    if (!anon.ok) {
+      const body = await anon.text().catch(() => "");
+      throw new GitHubApiError(anon.status, `GitHub API ${anon.status}: ${body.slice(0, 200)}`);
+    }
+    return (await anon.json()) as T;
+  }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`GitHub API ${res.status}: ${body.slice(0, 200)}`);
+    throw new GitHubApiError(res.status, `GitHub API ${res.status}: ${body.slice(0, 200)}`);
   }
   return (await res.json()) as T;
 }
@@ -93,6 +123,7 @@ export async function searchRepos(
   topic: TopicRecipe,
   token?: string,
   perPage = 30,
+  onAuthFail?: () => void,
 ): Promise<RadarItem[]> {
   const urls = new Set<string>();
   const topicQueries = buildTopicQueries(topic);
@@ -110,7 +141,7 @@ export async function searchRepos(
   }
 
   const settled = await Promise.allSettled(
-    [...urls].map((u) => getJson<{ items: RepoApi[] }>(u, token)),
+    [...urls].map((u) => getJson<{ items: RepoApi[] }>(u, token, onAuthFail)),
   );
 
   const byId = new Map<string, RadarItem>();
@@ -141,18 +172,23 @@ export async function searchIssues(
   kind: "issue" | "pr",
   token?: string,
   perPage = 30,
+  onAuthFail?: () => void,
 ): Promise<RadarItem[]> {
   const url = issueSearchUrl(topic, kind, perPage);
-  const data = await getJson<{ items: IssueApi[] }>(url, token);
+  const data = await getJson<{ items: IssueApi[] }>(url, token, onAuthFail);
   return data.items.map(issueToItem);
 }
 
 /** Gather all enabled sources for a topic into one list. */
-export async function fetchTopic(topic: TopicRecipe, token?: string): Promise<RadarItem[]> {
+export async function fetchTopic(
+  topic: TopicRecipe,
+  token?: string,
+  onAuthFail?: () => void,
+): Promise<RadarItem[]> {
   const jobs: Promise<RadarItem[]>[] = [];
-  if (topic.sources.repositories) jobs.push(searchRepos(topic, token));
-  if (topic.sources.issues) jobs.push(searchIssues(topic, "issue", token));
-  if (topic.sources.pullRequests) jobs.push(searchIssues(topic, "pr", token));
+  if (topic.sources.repositories) jobs.push(searchRepos(topic, token, 30, onAuthFail));
+  if (topic.sources.issues) jobs.push(searchIssues(topic, "issue", token, 30, onAuthFail));
+  if (topic.sources.pullRequests) jobs.push(searchIssues(topic, "pr", token, 30, onAuthFail));
   const results = await Promise.all(jobs);
   return results.flat();
 }
