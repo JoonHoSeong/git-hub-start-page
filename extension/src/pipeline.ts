@@ -2,6 +2,7 @@ import type { AppSettings, RadarItem, TopicRecipe } from "./types.js";
 import { fetchTopic } from "./github.js";
 import { applyExclusions, sortItems } from "./ranking.js";
 import { getCache, setCache, applyAndUpdateTrend } from "./storage.js";
+import { applyServerTrend } from "./trend-server.js";
 
 /** Deduplicate items by id, keeping the first occurrence. */
 function dedupe(items: RadarItem[]): RadarItem[] {
@@ -32,22 +33,27 @@ export async function runTopic(
   topic: TopicRecipe,
   settings: AppSettings,
   token?: string,
-  opts: { forceRefresh?: boolean; subtopicId?: string; onAuthFail?: () => void } = {},
+  opts: { forceRefresh?: boolean; subtopicIds?: string[]; onAuthFail?: () => void } = {},
 ): Promise<RunResult> {
-  // If a subtopic is active, narrow the search to its topic tags and add any
-  // extra exclusions. Uses a separate cache key so subtopic results are cached
-  // independently of the parent topic.
-  const sub = opts.subtopicId
-    ? topic.subtopics?.find((s) => s.id === opts.subtopicId)
-    : undefined;
-  const effectiveTopic: TopicRecipe = sub
-    ? {
-        ...topic,
-        githubTopics: sub.githubTopics,
-        exclude: [...topic.exclude, ...(sub.exclude ?? [])],
-      }
-    : topic;
-  const cacheKey = sub ? `${topic.id}::${sub.id}` : topic.id;
+  // If one or more subtopics are active, narrow to the union of their topic
+  // tags and add their extra exclusions. A separate cache key keeps each
+  // combination cached independently of the parent topic.
+  const activeSubs = (opts.subtopicIds ?? [])
+    .map((id) => topic.subtopics?.find((s) => s.id === id))
+    .filter((s): s is NonNullable<typeof s> => !!s);
+
+  const effectiveTopic: TopicRecipe =
+    activeSubs.length > 0
+      ? {
+          ...topic,
+          githubTopics: [...new Set(activeSubs.flatMap((s) => s.githubTopics))],
+          exclude: [...topic.exclude, ...activeSubs.flatMap((s) => s.exclude ?? [])],
+        }
+      : topic;
+  const cacheKey =
+    activeSubs.length > 0
+      ? `${topic.id}::${activeSubs.map((s) => s.id).sort().join("+")}`
+      : topic.id;
 
   if (!opts.forceRefresh) {
     const cached = await getCache<RadarItem[]>(cacheKey, settings.cacheTtlMinutes);
@@ -60,14 +66,21 @@ export async function runTopic(
 
   const raw = await fetchTopic(effectiveTopic, token, opts.onAuthFail);
   const filtered = applyExclusions(dedupe(raw), effectiveTopic);
-  // Measure real trend (stars gained since last visit) and record the current
-  // observation, before scoring/sorting so momentum reflects it.
-  await applyAndUpdateTrend(filtered);
+
+  // Trend source: built-in presets use the shared server trend (same for all
+  // users, cache-independent). Custom topics — which the server does not track
+  // — fall back to local observation history. If the server has no data yet,
+  // also fall back to local.
+  let usedServerTrend = false;
+  if (topic.isPreset) {
+    usedServerTrend = await applyServerTrend(filtered);
+  }
+  if (!usedServerTrend) {
+    await applyAndUpdateTrend(filtered);
+  }
+
   const ranked = sortItems(filtered, effectiveTopic, settings.sortBy);
 
-  // Relevance verification + summaries run on the document side (popup/newtab)
-  // via Chrome's built-in Prompt API, which is not available in service
-  // workers. The pipeline just fetches, filters, and sorts.
   await setCache(cacheKey, ranked);
   return { items: ranked, fromCache: false, llmApplied: false };
 }

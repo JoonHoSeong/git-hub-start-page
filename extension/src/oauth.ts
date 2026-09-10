@@ -11,6 +11,7 @@ import { saveToken } from "./storage.js";
  */
 export const OAUTH = {
   clientId: "Ov23liHYtI7Eof0VXlnv",
+  workerBaseUrl: "https://github-topic-radar-oauth.rag-web.workers.dev",
   tokenExchangeUrl: "https://github-topic-radar-oauth.rag-web.workers.dev/exchange",
   scopes: ["public_repo"], // enough to read/write stars on public repos
 };

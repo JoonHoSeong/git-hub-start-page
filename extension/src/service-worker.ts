@@ -14,7 +14,7 @@ import { getViewer } from "./github.js";
 import type { RadarItem } from "./types.js";
 
 type Msg =
-  | { type: "runTopic"; topicId: string; forceRefresh?: boolean; subtopicId?: string }
+  | { type: "runTopic"; topicId: string; forceRefresh?: boolean; subtopicIds?: string[] }
   | { type: "login" }
   | { type: "logout" }
   | { type: "viewer" }
@@ -34,7 +34,7 @@ async function handle(msg: Msg): Promise<unknown> {
       if (!topic) throw new Error(`Unknown topic: ${msg.topicId}`);
       return runTopic(topic, settings, token ?? undefined, {
         forceRefresh: msg.forceRefresh,
-        subtopicId: msg.subtopicId,
+        subtopicIds: msg.subtopicIds,
         onAuthFail: () => {
           // Token is invalid (expired/revoked). Drop it so future calls are
           // anonymous instead of failing with 401.
