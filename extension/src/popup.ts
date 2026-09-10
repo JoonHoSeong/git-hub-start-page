@@ -13,7 +13,7 @@ interface RunResult {
 let topics: TopicRecipe[] = [];
 let settings: AppSettings;
 let activeTopicId = "";
-let activeSubtopicId = "";
+let activeSubtopicIds = new Set<string>();
 
 const $ = <T extends HTMLElement>(sel: string): T => document.querySelector(sel) as T;
 
@@ -74,21 +74,30 @@ function renderSourceChips(): void {
   const topic = topics.find((t) => t.id === activeTopicId);
   if (!topic) return;
 
-  // Subtopic filter chips (finer-grained). "전체" clears the sub-filter.
+  // Subtopic filter chips (finer-grained, multi-select). "전체" clears all.
   if (topic.subtopics && topic.subtopics.length > 0) {
-    const makeSub = (id: string, name: string) => {
+    const allChip = document.createElement("span");
+    allChip.className = "chip sub" + (activeSubtopicIds.size === 0 ? " on" : "");
+    allChip.textContent = "전체";
+    allChip.onclick = () => {
+      activeSubtopicIds.clear();
+      renderSourceChips();
+      run(false);
+    };
+    box.appendChild(allChip);
+
+    for (const s of topic.subtopics) {
       const chip = document.createElement("span");
-      chip.className = "chip sub" + (activeSubtopicId === id ? " on" : "");
-      chip.textContent = name;
+      chip.className = "chip sub" + (activeSubtopicIds.has(s.id) ? " on" : "");
+      chip.textContent = s.name;
       chip.onclick = () => {
-        activeSubtopicId = id;
+        if (activeSubtopicIds.has(s.id)) activeSubtopicIds.delete(s.id);
+        else activeSubtopicIds.add(s.id);
         renderSourceChips();
         run(false);
       };
       box.appendChild(chip);
-    };
-    makeSub("", "전체");
-    for (const s of topic.subtopics) makeSub(s.id, s.name);
+    }
   }
 }
 /** Adapt a stored bookmark to the RadarItem shape the card renderer expects. */
@@ -240,7 +249,7 @@ async function run(forceRefresh = false): Promise<void> {
   }
 
   try {
-    const data = await send<RunResult>({ type: "runTopic", topicId: activeTopicId, forceRefresh, subtopicId: activeSubtopicId || undefined });
+    const data = await send<RunResult>({ type: "runTopic", topicId: activeTopicId, forceRefresh, subtopicIds: [...activeSubtopicIds] });
     results.innerHTML = "";
     if (data.items.length === 0) {
       results.innerHTML = `<div class="empty">결과가 없습니다.</div>`;
@@ -288,7 +297,7 @@ async function verifyResults(items: RadarItem[]): Promise<void> {
 
 function selectTopic(id: string): void {
   activeTopicId = id;
-  activeSubtopicId = "";
+  activeSubtopicIds = new Set();
   renderTabs();
   renderSourceChips();
   run(false);

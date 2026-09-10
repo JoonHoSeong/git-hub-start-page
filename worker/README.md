@@ -23,8 +23,14 @@ npx wrangler secret put GITHUB_CLIENT_ID
 #   → 프롬프트에 Ov23liHYtI7Eof0VXlnv 입력
 npx wrangler secret put GITHUB_CLIENT_SECRET
 #   → 프롬프트에 GitHub에서 발급받은 client secret 입력
+npx wrangler secret put GITHUB_PAT
+#   → (선택) 트렌드 수집기가 쓸 PAT. 없으면 시간당 60회 제한
 
-# 3) 배포
+# 3) 트렌드 저장용 KV 네임스페이스 생성
+npx wrangler kv namespace create TREND
+#   → 출력된 id를 wrangler.toml 의 [[kv_namespaces]] id 에 붙여넣기
+
+# 4) 배포 (Cron Trigger가 6시간마다 트렌드 수집)
 npx wrangler deploy
 ```
 
