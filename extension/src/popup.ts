@@ -1,6 +1,7 @@
 import type { AppSettings, RadarItem, TopicRecipe } from "./types.js";
 import { loadSettings, loadTopics, saveSettings, saveTopics } from "./storage.js";
 import { translateText, isTranslationSupported, TRANSLATE_LANGUAGES } from "./translate.js";
+import { verifyWithBuiltinAi, isBuiltinAiSupported } from "./verify.js";
 
 interface RunResult {
   items: RadarItem[];
@@ -109,6 +110,7 @@ function renderSourceChips(): void {
 function card(item: RadarItem): HTMLElement {
   const el = document.createElement("div");
   el.className = "card";
+  el.dataset.id = item.id;
   const kindLabel = item.kind === "repository" ? "REPO" : item.kind === "issue" ? "ISSUE" : "PR";
   const summary = item.summary
     ? `<div class="card-summary">💡 ${escapeHtml(item.summary)}</div>`
@@ -227,8 +229,42 @@ async function run(forceRefresh = false): Promise<void> {
       return;
     }
     for (const item of data.items) results.appendChild(card(item));
+    // Background relevance verification + summaries via Chrome built-in AI.
+    if (settings.aiVerify && isBuiltinAiSupported()) {
+      void verifyResults(data.items);
+    }
   } catch (e) {
     results.innerHTML = `<div class="empty">오류: ${escapeHtml((e as Error).message)}</div>`;
+  }
+}
+
+/**
+ * Verify/summarize the current results with the built-in model, then update
+ * each rendered card: fill in the 💡 summary and hide items judged irrelevant.
+ */
+async function verifyResults(items: RadarItem[]): Promise<void> {
+  const topic = topics.find((t) => t.id === activeTopicId);
+  if (!topic) return;
+  await verifyWithBuiltinAi(items, topic, settings.aiVerifyTopN);
+  const results = $("#results");
+  for (const item of items) {
+    const el = results.querySelector<HTMLElement>(`.card[data-id="${CSS.escape(item.id)}"]`);
+    if (!el) continue;
+    if (item.relevant === false) {
+      el.remove();
+      continue;
+    }
+    if (item.summary && !el.querySelector(".card-summary")) {
+      const sum = document.createElement("div");
+      sum.className = "card-summary";
+      sum.textContent = `💡 ${item.summary}`;
+      const desc = el.querySelector(".card-desc");
+      if (desc) desc.after(sum);
+      else el.querySelector(".card-head")?.after(sum);
+    }
+  }
+  if (results.querySelectorAll(".card").length === 0) {
+    results.innerHTML = `<div class="empty">관련 결과가 없습니다.</div>`;
   }
 }
 
@@ -242,16 +278,19 @@ function selectTopic(id: string): void {
 
 // ---- settings & topic management ----
 function openSettings(): void {
-  $("#llmBaseUrl").setAttribute("value", settings.llm.baseUrl);
-  ($("#llmBaseUrl") as HTMLInputElement).value = settings.llm.baseUrl;
-  ($("#llmApiKey") as HTMLInputElement).value = settings.llm.apiKey;
-  ($("#llmModel") as HTMLInputElement).value = settings.llm.model;
+  ($("#aiVerify") as HTMLInputElement).checked = settings.aiVerify;
+  ($("#aiVerifyTopN") as HTMLInputElement).value = String(settings.aiVerifyTopN);
   ($("#cacheTtl") as HTMLInputElement).value = String(settings.cacheTtlMinutes);
-  ($("#llmTopN") as HTMLInputElement).value = String(settings.llmTopN);
   ($("#theme") as HTMLSelectElement).value = settings.theme;
   ($("#density") as HTMLSelectElement).value = settings.density;
   populateTranslateSelect();
   ($("#translateTo") as HTMLSelectElement).value = settings.translateTo;
+  const aiNote = $("#aiVerifyNote");
+  if (aiNote) {
+    aiNote.textContent = isBuiltinAiSupported()
+      ? "Chrome 내장 AI(Gemini Nano)로 기기에서 검증·요약합니다. 키·비용 없음. 첫 사용 시 모델을 내려받습니다(수 GB, 여유 공간·데스크톱 필요)."
+      : "이 브라우저는 내장 AI를 지원하지 않습니다(Chrome 138+ 데스크톱, 저장공간·RAM 요구). topic 필터만 사용합니다.";
+  }
   renderTopicManager();
   $("#settingsPanel").classList.remove("hidden");
 }
@@ -329,11 +368,9 @@ async function addTopic(): Promise<void> {
 }
 
 async function saveSettingsFromForm(): Promise<void> {
-  settings.llm.baseUrl = ($("#llmBaseUrl") as HTMLInputElement).value.trim() || settings.llm.baseUrl;
-  settings.llm.apiKey = ($("#llmApiKey") as HTMLInputElement).value.trim();
-  settings.llm.model = ($("#llmModel") as HTMLInputElement).value.trim() || settings.llm.model;
+  settings.aiVerify = ($("#aiVerify") as HTMLInputElement).checked;
+  settings.aiVerifyTopN = Number(($("#aiVerifyTopN") as HTMLInputElement).value) || settings.aiVerifyTopN;
   settings.cacheTtlMinutes = Number(($("#cacheTtl") as HTMLInputElement).value) || settings.cacheTtlMinutes;
-  settings.llmTopN = Number(($("#llmTopN") as HTMLInputElement).value) || settings.llmTopN;
   settings.theme = ($("#theme") as HTMLSelectElement).value as AppSettings["theme"];
   settings.density = ($("#density") as HTMLSelectElement).value as AppSettings["density"];
   settings.translateTo = ($("#translateTo") as HTMLSelectElement).value;

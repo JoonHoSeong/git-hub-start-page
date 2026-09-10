@@ -62,7 +62,6 @@ export async function loadSettings(): Promise<AppSettings> {
   return {
     ...DEFAULT_SETTINGS,
     ...stored,
-    llm: { ...DEFAULT_SETTINGS.llm, ...stored.llm },
     defaultSources: { ...DEFAULT_SETTINGS.defaultSources, ...stored.defaultSources },
   };
 }

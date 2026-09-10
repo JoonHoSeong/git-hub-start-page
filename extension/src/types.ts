@@ -72,20 +72,15 @@ export interface RadarItem {
   relevant?: boolean;
 }
 
-export interface LlmSettings {
-  baseUrl: string;
-  apiKey: string;
-  model: string;
-}
-
 export interface AppSettings {
-  llm: LlmSettings;
   /** Default sources applied to newly created topics. */
   defaultSources: TopicSources;
   /** Cache time-to-live in minutes. */
   cacheTtlMinutes: number;
-  /** How many top items to send through the LLM tier. */
-  llmTopN: number;
+  /** Verify relevance + summarize top results with Chrome's built-in AI. */
+  aiVerify: boolean;
+  /** How many top items to verify/summarize with the built-in model. */
+  aiVerifyTopN: number;
   /** Color theme: follow OS ("auto"), or force "dark"/"light". */
   theme: "auto" | "dark" | "light";
   /** Card grid density on the full page. */
@@ -98,10 +93,10 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  llm: { baseUrl: "https://api.openai.com/v1", apiKey: "", model: "gpt-4o-mini" },
   defaultSources: { repositories: true, issues: false, pullRequests: false },
   cacheTtlMinutes: 30,
-  llmTopN: 15,
+  aiVerify: false,
+  aiVerifyTopN: 15,
   theme: "auto",
   density: "comfortable",
   translateTo: "off",
