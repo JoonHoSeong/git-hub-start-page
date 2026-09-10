@@ -33,11 +33,10 @@
     <section id="settingsPanel" class="settings-panel hidden">
       <h2>설정</h2>
       <fieldset>
-        <legend>LLM (선택) — OpenAI 호환</legend>
-        <label>Base URL <input id="llmBaseUrl" type="text" placeholder="https://api.openai.com/v1" /></label>
-        <label>API Key <input id="llmApiKey" type="password" placeholder="sk-... (비우면 무료 티어)" /></label>
-        <label>Model <input id="llmModel" type="text" placeholder="gpt-4o-mini" /></label>
-        <p class="hint">로컬(Ollama): http://localhost:11434/v1 · 키 없이 사용 가능</p>
+        <legend>정확도 검증 (Chrome 내장 AI)</legend>
+        <label class="checkbox-row"><input id="aiVerify" type="checkbox" /> 내장 AI로 관련성 검증 + 요약</label>
+        <label>검증할 상위 개수 <input id="aiVerifyTopN" type="number" min="1" max="50" /></label>
+        <p class="hint" id="aiVerifyNote"></p>
       </fieldset>
       <fieldset>
         <legend>일반</legend>
@@ -60,7 +59,6 @@
         </label>
         <p class="hint" id="translateNote"></p>
         <label>캐시 유지(분) <input id="cacheTtl" type="number" min="1" max="240" /></label>
-        <label>LLM 검증 상위 N개 <input id="llmTopN" type="number" min="1" max="50" /></label>
       </fieldset>
       <div class="settings-actions">
         <button id="saveSettings" class="primary">저장</button>

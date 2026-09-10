@@ -1,7 +1,6 @@
 import type { AppSettings, RadarItem, TopicRecipe } from "./types.js";
 import { fetchTopic } from "./github.js";
 import { applyExclusions, sortItems } from "./ranking.js";
-import { enrichWithLlm } from "./llm.js";
 import { getCache, setCache } from "./storage.js";
 
 /** Deduplicate items by id, keeping the first occurrence. */
@@ -63,16 +62,9 @@ export async function runTopic(
   const filtered = applyExclusions(dedupe(raw), effectiveTopic);
   const ranked = sortItems(filtered, effectiveTopic, settings.sortBy);
 
-  const hasLlm = Boolean(settings.llm.apiKey) || /localhost|127\.0\.0\.1/.test(settings.llm.baseUrl);
-  let llmApplied = false;
-  if (hasLlm) {
-    await enrichWithLlm(ranked, effectiveTopic, settings.llm, settings.llmTopN);
-    llmApplied = true;
-    const relevant = ranked.filter((it) => it.relevant !== false);
-    await setCache(cacheKey, relevant);
-    return { items: relevant, fromCache: false, llmApplied };
-  }
-
+  // Relevance verification + summaries run on the document side (popup/newtab)
+  // via Chrome's built-in Prompt API, which is not available in service
+  // workers. The pipeline just fetches, filters, and sorts.
   await setCache(cacheKey, ranked);
-  return { items: ranked, fromCache: false, llmApplied };
+  return { items: ranked, fromCache: false, llmApplied: false };
 }
