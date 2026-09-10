@@ -18,4 +18,4 @@ crons = ["0 * * * *"]
 #   npx wrangler kv namespace create TREND
 [[kv_namespaces]]
 binding = "TREND"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "76caa0aeeb6747e493f633ec13b5c1d1"
