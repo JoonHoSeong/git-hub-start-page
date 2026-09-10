@@ -40,7 +40,13 @@ export function computeScore(
   // Baseline popularity, dampened so it does not dominate velocity.
   const popularity = Math.log10(item.stars + 1) * 5;
 
-  return velocityScore + freshness + topicScore + popularity;
+  // Real recent trend: stars gained per day measured between visits (only set
+  // after a second observation). Weighted strongly so genuinely rising repos —
+  // even older ones — surface above high-lifetime-average-but-stale repos.
+  const trendScore =
+    item.trend !== undefined && item.trend > 0 ? Math.log10(item.trend + 1) * 60 : 0;
+
+  return velocityScore + freshness + topicScore + popularity + trendScore;
 }
 
 /** Rank items in place by descending momentum score. Returns the array. */

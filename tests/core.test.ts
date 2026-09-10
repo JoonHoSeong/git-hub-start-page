@@ -108,6 +108,21 @@ test("computeScore gives a topic-accuracy bonus", () => {
   assert.ok(computeScore(withTopic, mcp, NOW) > computeScore(withoutTopic, mcp, NOW));
 });
 
+test("computeScore rewards a measured recent trend", () => {
+  const base = {
+    stars: 500,
+    createdAt: new Date("2024-01-01T00:00:00Z").toISOString(),
+    updatedAt: NOW.toISOString(),
+    topics: ["mcp"],
+  };
+  const rising = item({ ...base, id: "rising", trend: 80 }); // +80 stars/day measured
+  const flat = item({ ...base, id: "flat" }); // no trend observed
+  assert.ok(
+    computeScore(rising, mcp, NOW) > computeScore(flat, mcp, NOW),
+    "measured trend should rank a repo higher than an identical one without trend",
+  );
+});
+
 test("rankItems sorts by descending score", () => {
   const items = [
     item({ id: "a", stars: 10, createdAt: new Date("2020-01-01").toISOString() }),

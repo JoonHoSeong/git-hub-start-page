@@ -1,7 +1,7 @@
 import type { AppSettings, RadarItem, TopicRecipe } from "./types.js";
 import { fetchTopic } from "./github.js";
 import { applyExclusions, sortItems } from "./ranking.js";
-import { getCache, setCache } from "./storage.js";
+import { getCache, setCache, applyAndUpdateTrend } from "./storage.js";
 
 /** Deduplicate items by id, keeping the first occurrence. */
 function dedupe(items: RadarItem[]): RadarItem[] {
@@ -60,6 +60,9 @@ export async function runTopic(
 
   const raw = await fetchTopic(effectiveTopic, token, opts.onAuthFail);
   const filtered = applyExclusions(dedupe(raw), effectiveTopic);
+  // Measure real trend (stars gained since last visit) and record the current
+  // observation, before scoring/sorting so momentum reflects it.
+  await applyAndUpdateTrend(filtered);
   const ranked = sortItems(filtered, effectiveTopic, settings.sortBy);
 
   // Relevance verification + summaries run on the document side (popup/newtab)

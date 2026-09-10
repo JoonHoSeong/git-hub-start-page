@@ -265,6 +265,7 @@ body {
   margin-top: 10px;
 }
 .meta-item { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.meta-item.trend-up { color: #3fb950; font-weight: 600; }
 .star-btn {
   margin-left: auto;
   background: none;

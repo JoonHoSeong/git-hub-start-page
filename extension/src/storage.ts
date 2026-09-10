@@ -8,6 +8,7 @@ const KEYS = {
   token: "githubToken",
   cache: "cache",
   bookmarks: "bookmarks",
+  starHistory: "starHistory",
 } as const;
 
 interface CacheEntry {
@@ -159,4 +160,52 @@ export async function addBookmark(item: RadarItem): Promise<void> {
 export async function removeBookmark(id: string): Promise<void> {
   const list = await loadBookmarks();
   await syncSet(KEYS.bookmarks, list.filter((b) => b.id !== id));
+}
+
+// ---- Star observation history (for real trend = stars gained between visits) ----
+// Stored in chrome.storage.local as { [repoId]: { stars, at } }. Capped to
+// avoid unbounded growth. We keep the most recently observed entries.
+
+interface StarObs {
+  stars: number;
+  at: number;
+}
+const STAR_HISTORY_LIMIT = 2000;
+const MIN_TREND_HOURS = 1; // ignore deltas measured over a very short interval
+
+async function loadStarHistory(): Promise<Record<string, StarObs>> {
+  return get<Record<string, StarObs>>(KEYS.starHistory, {});
+}
+
+/**
+ * Given freshly fetched items, compute each item's `trend` (stars gained per
+ * day since the last observation) and then record the current observation.
+ * On the first observation for a repo, `trend` stays undefined.
+ */
+export async function applyAndUpdateTrend(items: RadarItem[]): Promise<void> {
+  const history = await loadStarHistory();
+  const now = Date.now();
+
+  for (const item of items) {
+    const prev = history[item.id];
+    if (prev) {
+      const hours = (now - prev.at) / 3_600_000;
+      if (hours >= MIN_TREND_HOURS) {
+        const days = hours / 24;
+        item.trend = (item.stars - prev.stars) / days;
+      }
+    }
+    // Record the current observation (overwrites the previous one).
+    history[item.id] = { stars: item.stars, at: now };
+  }
+
+  // Cap history size: keep the most recently observed entries.
+  const entries = Object.entries(history);
+  if (entries.length > STAR_HISTORY_LIMIT) {
+    entries.sort((a, b) => b[1].at - a[1].at);
+    const trimmed = Object.fromEntries(entries.slice(0, STAR_HISTORY_LIMIT));
+    await set(KEYS.starHistory, trimmed);
+  } else {
+    await set(KEYS.starHistory, history);
+  }
 }
