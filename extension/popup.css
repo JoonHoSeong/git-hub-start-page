@@ -105,7 +105,7 @@ body {
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-.topbar-actions { display: flex; gap: 8px; align-items: center; }
+.topbar-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 
 .icon-btn, .auth-btn {
   background: var(--glass);
@@ -117,6 +117,8 @@ body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   transition: transform .12s ease, background .15s ease, border-color .15s ease;
+  white-space: nowrap;
+  flex: none;
 }
 .icon-btn { width: 30px; height: 30px; font-size: 14px; }
 .auth-btn { font-size: 12px; font-weight: 600; }
@@ -130,6 +132,9 @@ body {
   cursor: pointer;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  white-space: nowrap;
+  flex: none;
+  max-width: 100%;
 }
 .icon-btn:hover, .auth-btn:hover {
   background: var(--glass-strong);
@@ -437,6 +442,28 @@ body.fulltab .settings-panel > * { max-width: 640px; margin-left: auto; margin-r
   body.fulltab .tabs,
   body.fulltab .source-chips,
   body.fulltab .results { padding-left: 18px; padding-right: 18px; }
+}
+
+/* Small screens: stack the top bar into two rows instead of squeezing
+   buttons (which was causing the login button's text to wrap vertically). */
+@media (max-width: 560px) {
+  body.fulltab .topbar {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+  body.fulltab .topbar-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  body.fulltab .sort-select { flex: 1 1 auto; min-width: 0; }
+  /* Single-column cards on narrow screens; avoid horizontal overflow from
+     the desktop grid's fixed minmax() column width. */
+  body.fulltab .results,
+  body.fulltab.density-comfortable .results,
+  body.fulltab.density-cozy .results,
+  body.fulltab.density-compact .results {
+    grid-template-columns: 1fr;
+  }
 }
 
 .contact {
