@@ -37,8 +37,8 @@ export async function loadTopics(): Promise<TopicRecipe[]> {
   for (const t of stored) {
     if (t.isPreset && latest.has(t.id)) {
       // Replace the preset with the latest definition but keep the user's
-      // source toggles (they may have enabled issues/PRs for this topic).
-      merged.push({ ...latest.get(t.id)!, sources: t.sources });
+      // enable/disable choice for this tab.
+      merged.push({ ...latest.get(t.id)!, enabled: t.enabled });
       seen.add(t.id);
     } else {
       merged.push(t);
@@ -62,7 +62,6 @@ export async function loadSettings(): Promise<AppSettings> {
   return {
     ...DEFAULT_SETTINGS,
     ...stored,
-    defaultSources: { ...DEFAULT_SETTINGS.defaultSources, ...stored.defaultSources },
   };
 }
 
@@ -122,7 +121,6 @@ async function syncSet(key: string, value: unknown): Promise<void> {
 /** Compact form of a bookmarked item kept in sync storage. */
 export interface Bookmark {
   id: string;
-  kind: RadarItem["kind"];
   title: string;
   repoFullName: string;
   url: string;
@@ -133,7 +131,6 @@ export interface Bookmark {
 function toBookmark(item: RadarItem): Bookmark {
   return {
     id: item.id,
-    kind: item.kind,
     title: item.title,
     repoFullName: item.repoFullName,
     url: item.url,

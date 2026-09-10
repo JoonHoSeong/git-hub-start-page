@@ -1,8 +1,12 @@
 import type { TopicRecipe } from "./types.js";
 
 /**
- * Built-in tuned presets. Users can edit or delete these.
- * githubTopics carry the strongest precision; include/exclude refine text search.
+ * Built-in topic catalog. Users can enable/disable, reorder, edit, or delete
+ * these, and add their own. `enabled: true` topics show as tabs by default;
+ * the rest are available in Settings → 주제 관리 to turn on.
+ *
+ * githubTopics carry the strongest precision; include/exclude refine further.
+ * All topic tags here were validated against the live GitHub API.
  */
 export const DEFAULT_TOPICS: TopicRecipe[] = [
   {
@@ -13,7 +17,7 @@ export const DEFAULT_TOPICS: TopicRecipe[] = [
     githubTopics: ["llm", "large-language-models"],
     minStars: 10,
     recentDays: 90,
-    sources: { repositories: true, issues: false, pullRequests: false },
+    enabled: true,
     subtopics: [
       { id: "inference", name: "추론·서빙", githubTopics: ["llm-inference", "inference", "llm-serving"] },
       { id: "rag", name: "RAG", githubTopics: ["rag", "retrieval-augmented-generation"] },
@@ -31,7 +35,7 @@ export const DEFAULT_TOPICS: TopicRecipe[] = [
     githubTopics: ["model-context-protocol", "mcp-server", "mcp"],
     minStars: 5,
     recentDays: 90,
-    sources: { repositories: true, issues: false, pullRequests: false },
+    enabled: true,
     subtopics: [
       { id: "server", name: "서버", githubTopics: ["mcp-server", "mcp-servers"] },
       { id: "client", name: "클라이언트", githubTopics: ["mcp-client"] },
@@ -48,12 +52,89 @@ export const DEFAULT_TOPICS: TopicRecipe[] = [
     githubTopics: ["agent-skills", "claude-skills"],
     minStars: 5,
     recentDays: 90,
-    sources: { repositories: true, issues: false, pullRequests: false },
+    enabled: true,
     subtopics: [
       { id: "claude", name: "Claude Skills", githubTopics: ["claude-skills"] },
       { id: "agent", name: "에이전트 스킬", githubTopics: ["agent-skills"] },
       { id: "tools", name: "툴·플러그인", githubTopics: ["ai-tools", "agent-tools", "llm-tools"] },
     ],
+    isPreset: true,
+  },
+  {
+    id: "preset-agents",
+    name: "AI Agents",
+    include: ["ai agent", "autonomous agent", "multi-agent"],
+    exclude: ["tutorial-list", "awesome-list"],
+    githubTopics: ["ai-agents", "ai-agent", "autonomous-agents"],
+    minStars: 20,
+    recentDays: 90,
+    enabled: false,
+    isPreset: true,
+  },
+  {
+    id: "preset-rag",
+    name: "RAG",
+    include: ["retrieval augmented generation", "rag"],
+    exclude: ["awesome-list"],
+    githubTopics: ["rag", "retrieval-augmented-generation"],
+    minStars: 20,
+    recentDays: 90,
+    enabled: false,
+    isPreset: true,
+  },
+  {
+    id: "preset-vectordb",
+    name: "Vector DB",
+    include: ["vector database", "embeddings search"],
+    exclude: [],
+    githubTopics: ["vector-database", "vector-search", "embeddings"],
+    minStars: 20,
+    recentDays: 120,
+    enabled: false,
+    isPreset: true,
+  },
+  {
+    id: "preset-prompt",
+    name: "Prompt Engineering",
+    include: ["prompt engineering", "prompts"],
+    exclude: ["awesome-list"],
+    githubTopics: ["prompt-engineering", "prompts"],
+    minStars: 30,
+    recentDays: 120,
+    enabled: false,
+    isPreset: true,
+  },
+  {
+    id: "preset-diffusion",
+    name: "Diffusion / 이미지 생성",
+    include: ["diffusion model", "text to image", "image generation"],
+    exclude: [],
+    githubTopics: ["diffusion-models", "stable-diffusion", "text-to-image"],
+    minStars: 30,
+    recentDays: 120,
+    enabled: false,
+    isPreset: true,
+  },
+  {
+    id: "preset-finetune",
+    name: "Fine-tuning",
+    include: ["fine-tuning", "lora", "peft"],
+    exclude: [],
+    githubTopics: ["fine-tuning", "lora", "peft"],
+    minStars: 20,
+    recentDays: 120,
+    enabled: false,
+    isPreset: true,
+  },
+  {
+    id: "preset-voice",
+    name: "Voice / STT·TTS",
+    include: ["speech to text", "text to speech", "voice ai"],
+    exclude: [],
+    githubTopics: ["speech-to-text", "text-to-speech", "speech-recognition"],
+    minStars: 20,
+    recentDays: 120,
+    enabled: false,
     isPreset: true,
   },
 ];

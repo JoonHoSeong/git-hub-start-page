@@ -81,40 +81,6 @@ export function buildTopicQueries(topic: TopicRecipe, now: Date = new Date()): s
     .map((t) => `topic:${t}${suffix}`);
 }
 
-/**
- * Build the issues/PR search query. GitHub uses /search/issues for both,
- * differentiated by `type:issue` or `type:pr`.
- */
-export function buildIssueQuery(
-  topic: TopicRecipe,
-  kind: "issue" | "pr",
-  now: Date = new Date(),
-): string {
-  const parts: string[] = [];
-
-  const includes = topic.include.map(quoteIfPhrase).filter(Boolean);
-  if (includes.length === 1) {
-    parts.push(includes[0]);
-  } else if (includes.length > 1) {
-    parts.push(`(${includes.join(" OR ")})`);
-  }
-  // If there are no free-text terms, fall back to topic names as text.
-  if (includes.length === 0 && topic.githubTopics.length > 0) {
-    parts.push(`(${topic.githubTopics.map((t) => quoteIfPhrase(t.replace(/-/g, " "))).join(" OR ")})`);
-  }
-
-  for (const ex of topic.exclude) {
-    const q = quoteIfPhrase(ex);
-    if (q) parts.push(`-${q}`);
-  }
-
-  parts.push(`type:${kind}`);
-  parts.push("state:open");
-  if (topic.recentDays > 0) parts.push(`updated:>${recentCutoff(topic.recentDays, now)}`);
-
-  return parts.join(" ").trim();
-}
-
 /** Full endpoint URL for a repository search. */
 export function repoSearchUrl(topic: TopicRecipe, perPage = 30, now: Date = new Date()): string {
   const q = buildRepoQuery(topic, now);
@@ -125,21 +91,4 @@ export function repoSearchUrl(topic: TopicRecipe, perPage = 30, now: Date = new 
     per_page: String(perPage),
   });
   return `https://api.github.com/search/repositories?${params.toString()}`;
-}
-
-/** Full endpoint URL for an issue/PR search. */
-export function issueSearchUrl(
-  topic: TopicRecipe,
-  kind: "issue" | "pr",
-  perPage = 30,
-  now: Date = new Date(),
-): string {
-  const q = buildIssueQuery(topic, kind, now);
-  const params = new URLSearchParams({
-    q,
-    sort: "comments",
-    order: "desc",
-    per_page: String(perPage),
-  });
-  return `https://api.github.com/search/issues?${params.toString()}`;
 }

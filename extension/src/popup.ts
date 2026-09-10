@@ -1,5 +1,6 @@
 import type { AppSettings, RadarItem, TopicRecipe } from "./types.js";
 import { loadSettings, loadTopics, saveSettings, saveTopics } from "./storage.js";
+import type { Bookmark } from "./storage.js";
 import { translateText, isTranslationSupported, TRANSLATE_LANGUAGES } from "./translate.js";
 import { verifyWithBuiltinAi, isBuiltinAiSupported } from "./verify.js";
 
@@ -43,17 +44,22 @@ function relativeTime(iso: string): string {
 
 const FAVORITES_ID = "__favorites__";
 
+/** Topics shown as tabs (enabled !== false, preserving order). */
+function enabledTopics(): TopicRecipe[] {
+  return topics.filter((t) => t.enabled !== false);
+}
+
 function renderTabs(): void {
   const nav = $("#tabs");
   nav.innerHTML = "";
-  for (const t of topics) {
+  for (const t of enabledTopics()) {
     const btn = document.createElement("button");
     btn.className = "tab" + (t.id === activeTopicId ? " active" : "");
     btn.textContent = t.name;
     btn.onclick = () => selectTopic(t.id);
     nav.appendChild(btn);
   }
-  // Favorites pseudo-tab (shows the user's GitHub-starred repos).
+  // Favorites pseudo-tab (shows local bookmarks).
   const fav = document.createElement("button");
   fav.className = "tab tab-fav" + (activeTopicId === FAVORITES_ID ? " active" : "");
   fav.textContent = "🔖 북마크";
@@ -67,30 +73,9 @@ function renderSourceChips(): void {
   if (activeTopicId === FAVORITES_ID) return;
   const topic = topics.find((t) => t.id === activeTopicId);
   if (!topic) return;
-  const defs: [keyof TopicRecipe["sources"], string][] = [
-    ["repositories", "Repos"],
-    ["issues", "Issues"],
-    ["pullRequests", "PRs"],
-  ];
-  for (const [key, label] of defs) {
-    const chip = document.createElement("span");
-    chip.className = "chip" + (topic.sources[key] ? " on" : "");
-    chip.textContent = label;
-    chip.onclick = async () => {
-      topic.sources[key] = !topic.sources[key];
-      await saveTopics(topics);
-      renderSourceChips();
-      run(true);
-    };
-    box.appendChild(chip);
-  }
 
   // Subtopic filter chips (finer-grained). "전체" clears the sub-filter.
   if (topic.subtopics && topic.subtopics.length > 0) {
-    const divider = document.createElement("span");
-    divider.className = "chip-divider";
-    box.appendChild(divider);
-
     const makeSub = (id: string, name: string) => {
       const chip = document.createElement("span");
       chip.className = "chip sub" + (activeSubtopicId === id ? " on" : "");
@@ -106,30 +91,40 @@ function renderSourceChips(): void {
     for (const s of topic.subtopics) makeSub(s.id, s.name);
   }
 }
+/** Adapt a stored bookmark to the RadarItem shape the card renderer expects. */
+function bookmarkToItem(b: Bookmark): RadarItem {
+  return {
+    id: b.id,
+    title: b.title,
+    repoFullName: b.repoFullName,
+    url: b.url,
+    description: b.description,
+    stars: 0,
+    forks: 0,
+    createdAt: new Date(b.addedAt).toISOString(),
+    updatedAt: new Date(b.addedAt).toISOString(),
+    topics: [],
+    score: 0,
+  };
+}
 
 function card(item: RadarItem): HTMLElement {
   const el = document.createElement("div");
   el.className = "card";
   el.dataset.id = item.id;
-  const kindLabel = item.kind === "repository" ? "REPO" : item.kind === "issue" ? "ISSUE" : "PR";
   const summary = item.summary
     ? `<div class="card-summary">💡 ${escapeHtml(item.summary)}</div>`
     : "";
-  const stars = item.kind === "repository" ? `<span class="meta-item">⭐ ${item.stars.toLocaleString()}</span>` : "";
-  const forks = item.kind === "repository" ? `<span class="meta-item">🍴 ${item.forks.toLocaleString()}</span>` : "";
-  const disc =
-    item.kind !== "repository"
-      ? `<span class="meta-item">💬 ${item.comments}</span><span class="meta-item">👍 ${item.reactions}</span>`
-      : "";
   el.innerHTML = `
     <div class="card-head">
       <a class="card-title" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">${escapeHtml(item.title)}</a>
-      <span class="badge">${kindLabel}</span>
+      <span class="badge">REPO</span>
     </div>
     ${item.description ? `<div class="card-desc">${escapeHtml(item.description)}</div>` : ""}
     ${summary}
     <div class="card-meta">
-      ${stars}${forks}${disc}
+      <span class="meta-item">⭐ ${item.stars.toLocaleString()}</span>
+      <span class="meta-item">🍴 ${item.forks.toLocaleString()}</span>
       <span class="meta-item" title="마지막 업데이트 시각">업데이트 ${relativeTime(item.updatedAt)}</span>
       <span class="meta-item" title="최근 상승세(momentum) 점수">🔥 ${item.score.toFixed(0)}</span>
       <button class="star-btn" title="북마크 (이 앱에만 저장)">🔖</button>
@@ -208,13 +203,13 @@ async function run(forceRefresh = false): Promise<void> {
 
   if (activeTopicId === FAVORITES_ID) {
     try {
-      const data = await send<{ items: RadarItem[] }>({ type: "favorites" });
+      const data = await send<{ items: Bookmark[] }>({ type: "favorites" });
       results.innerHTML = "";
       if (data.items.length === 0) {
         results.innerHTML = `<div class="empty">아직 북마크한 항목이 없습니다.<br/>카드의 🏷️를 눌러 북마크에 추가하세요.</div>`;
         return;
       }
-      for (const item of data.items) results.appendChild(card(item));
+      for (const b of data.items) results.appendChild(card(bookmarkToItem(b)));
     } catch (e) {
       results.innerHTML = `<div class="empty">오류: ${escapeHtml((e as Error).message)}</div>`;
     }
@@ -319,23 +314,66 @@ function populateTranslateSelect(): void {
 function renderTopicManager(): void {
   const list = $("#topicList");
   list.innerHTML = "";
-  for (const t of topics) {
+  topics.forEach((t, idx) => {
     const row = document.createElement("div");
     row.className = "topic-row";
-    row.innerHTML = `<span>${escapeHtml(t.name)}${t.isPreset ? " (기본)" : ""}</span>`;
-    const del = document.createElement("button");
-    del.textContent = "삭제";
-    del.onclick = async () => {
-      topics = topics.filter((x) => x.id !== t.id);
+
+    // Enable/disable as a tab.
+    const label = document.createElement("label");
+    label.className = "topic-toggle";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = t.enabled !== false;
+    cb.onchange = async () => {
+      t.enabled = cb.checked;
       await saveTopics(topics);
-      if (activeTopicId === t.id) activeTopicId = topics[0]?.id ?? "";
+      renderTabs();
+      // If the active tab was just hidden, switch to the first enabled one.
+      if (!enabledTopics().some((x) => x.id === activeTopicId)) {
+        activeTopicId = enabledTopics()[0]?.id ?? "";
+        renderSourceChips();
+        if (activeTopicId) run(false);
+      }
+    };
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(` ${t.name}${t.isPreset ? " (기본)" : ""}`));
+    row.appendChild(label);
+
+    // Reorder + delete controls.
+    const controls = document.createElement("div");
+    controls.className = "topic-controls";
+    const mkBtn = (text: string, title: string, disabled: boolean, fn: () => void) => {
+      const b = document.createElement("button");
+      b.textContent = text;
+      b.title = title;
+      b.disabled = disabled;
+      b.onclick = fn;
+      controls.appendChild(b);
+    };
+    mkBtn("↑", "위로", idx === 0, async () => {
+      [topics[idx - 1], topics[idx]] = [topics[idx], topics[idx - 1]];
+      await saveTopics(topics);
       renderTopicManager();
       renderTabs();
+    });
+    mkBtn("↓", "아래로", idx === topics.length - 1, async () => {
+      [topics[idx + 1], topics[idx]] = [topics[idx], topics[idx + 1]];
+      await saveTopics(topics);
+      renderTopicManager();
+      renderTabs();
+    });
+    mkBtn("삭제", "삭제", false, async () => {
+      topics = topics.filter((x) => x.id !== t.id);
+      await saveTopics(topics);
+      if (activeTopicId === t.id) activeTopicId = enabledTopics()[0]?.id ?? "";
+      renderTopicManager();
+      renderTabs();
+      renderSourceChips();
       if (activeTopicId) run(false);
-    };
-    row.appendChild(del);
+    });
+    row.appendChild(controls);
     list.appendChild(row);
-  }
+  });
 }
 
 async function addTopic(): Promise<void> {
@@ -355,8 +393,8 @@ async function addTopic(): Promise<void> {
     exclude: [],
     githubTopics: kw.map((k) => k.toLowerCase().replace(/\s+/g, "-")),
     minStars: 5,
-    recentDays: 30,
-    sources: { ...settings.defaultSources },
+    recentDays: 90,
+    enabled: true,
     isPreset: false,
   };
   topics.push(topic);
@@ -426,7 +464,7 @@ async function init(): Promise<void> {
   [topics, settings] = await Promise.all([loadTopics(), loadSettings()]);
   applyTheme(settings.theme);
   applyDensity(settings.density);
-  activeTopicId = topics[0]?.id ?? "";
+  activeTopicId = enabledTopics()[0]?.id ?? "";
   renderTabs();
   renderSourceChips();
   updateAuthButton();
