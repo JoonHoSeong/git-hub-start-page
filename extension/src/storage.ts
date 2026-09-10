@@ -9,6 +9,7 @@ const KEYS = {
   cache: "cache",
   bookmarks: "bookmarks",
   starHistory: "starHistory",
+  seen: "seen",
 } as const;
 
 interface CacheEntry {
@@ -207,5 +208,30 @@ export async function applyAndUpdateTrend(items: RadarItem[]): Promise<void> {
     await set(KEYS.starHistory, trimmed);
   } else {
     await set(KEYS.starHistory, history);
+  }
+}
+
+// ---- "Seen" repos (for 🆕 NEW badges on newly appeared items) ----
+// Stored in chrome.storage.local as { [repoId]: lastSeenAt }. Capped.
+
+const SEEN_LIMIT = 5000;
+
+/** Return the subset of ids the user has NOT seen before (i.e. new). */
+export async function filterNewIds(ids: string[]): Promise<Set<string>> {
+  const seen = await get<Record<string, number>>(KEYS.seen, {});
+  return new Set(ids.filter((id) => !(id in seen)));
+}
+
+/** Record the given ids as seen (now). Caps total entries. */
+export async function markSeen(ids: string[]): Promise<void> {
+  const seen = await get<Record<string, number>>(KEYS.seen, {});
+  const now = Date.now();
+  for (const id of ids) seen[id] = now;
+  const entries = Object.entries(seen);
+  if (entries.length > SEEN_LIMIT) {
+    entries.sort((a, b) => b[1] - a[1]);
+    await set(KEYS.seen, Object.fromEntries(entries.slice(0, SEEN_LIMIT)));
+  } else {
+    await set(KEYS.seen, seen);
   }
 }

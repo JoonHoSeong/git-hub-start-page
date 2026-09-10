@@ -10,9 +10,9 @@ compatibility_date = "2024-11-01"
 [vars]
 ALLOWED_ORIGIN = "chrome-extension://jlillemjommikolcmnlbnoeegmbcpold"
 
-# Shared trend collector runs every 6 hours.
+# Shared trend collector runs hourly.
 [triggers]
-crons = ["0 */6 * * *"]
+crons = ["0 * * * *"]
 
 # KV namespace for star snapshots. Create it once, then paste the id here:
 #   npx wrangler kv namespace create TREND

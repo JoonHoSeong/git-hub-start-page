@@ -180,6 +180,31 @@ body {
 .chip-divider { width: 1px; align-self: stretch; background: var(--glass-border); margin: 0 4px; }
 .source-chips { flex-wrap: wrap; align-items: center; }
 
+/* in-results search */
+.search-row { padding: 0 14px 6px; }
+.search-box {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--text);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.search-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+body.fulltab .search-row { padding: 0 36px 8px; max-width: 1500px; margin: 0 auto; width: 100%; }
+
+/* badges */
+.badges { display: inline-flex; gap: 4px; align-items: center; }
+.badge-new {
+  background: linear-gradient(135deg, #3fb950, #56d364);
+  color: #04220c;
+  border: none;
+  font-weight: 700;
+}
+.card.is-new { border-color: rgba(63, 185, 80, 0.5); }
+
 /* ---- results ---- */
 .results { padding: 6px 14px 16px; overflow-y: auto; max-height: 460px; }
 .empty, .loading { color: var(--muted); text-align: center; padding: 36px 0; }
