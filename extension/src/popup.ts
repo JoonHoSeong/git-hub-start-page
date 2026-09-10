@@ -1,5 +1,5 @@
 import type { AppSettings, RadarItem, TopicRecipe } from "./types.js";
-import { loadSettings, loadTopics, saveSettings, saveTopics } from "./storage.js";
+import { loadSettings, loadTopics, saveSettings, saveTopics, filterNewIds, markSeen } from "./storage.js";
 import type { Bookmark } from "./storage.js";
 import { translateText, isTranslationSupported, TRANSLATE_LANGUAGES } from "./translate.js";
 import { verifyWithBuiltinAi, isBuiltinAiSupported } from "./verify.js";
@@ -14,6 +14,9 @@ let topics: TopicRecipe[] = [];
 let settings: AppSettings;
 let activeTopicId = "";
 let activeSubtopicIds = new Set<string>();
+let lastItems: RadarItem[] = [];
+let newIds = new Set<string>();
+let searchQuery = "";
 
 const $ = <T extends HTMLElement>(sel: string): T => document.querySelector(sel) as T;
 
@@ -117,9 +120,9 @@ function bookmarkToItem(b: Bookmark): RadarItem {
   };
 }
 
-function card(item: RadarItem): HTMLElement {
+function card(item: RadarItem, isNew = false): HTMLElement {
   const el = document.createElement("div");
-  el.className = "card";
+  el.className = "card" + (isNew ? " is-new" : "");
   el.dataset.id = item.id;
   const summary = item.summary
     ? `<div class="card-summary">💡 ${escapeHtml(item.summary)}</div>`
@@ -133,7 +136,7 @@ function card(item: RadarItem): HTMLElement {
   el.innerHTML = `
     <div class="card-head">
       <a class="card-title" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">${escapeHtml(item.title)}</a>
-      <span class="badge">REPO</span>
+      <span class="badges">${isNew ? `<span class="badge badge-new">NEW</span>` : ""}<span class="badge">REPO</span></span>
     </div>
     ${descHtml}
     ${summary}
@@ -250,12 +253,16 @@ async function run(forceRefresh = false): Promise<void> {
 
   try {
     const data = await send<RunResult>({ type: "runTopic", topicId: activeTopicId, forceRefresh, subtopicIds: [...activeSubtopicIds] });
-    results.innerHTML = "";
     if (data.items.length === 0) {
       results.innerHTML = `<div class="empty">결과가 없습니다.</div>`;
+      lastItems = [];
       return;
     }
-    for (const item of data.items) results.appendChild(card(item));
+    lastItems = data.items;
+    // Detect which repos are new since the user last saw them, then record them.
+    newIds = await filterNewIds(data.items.map((i) => i.id));
+    void markSeen(data.items.map((i) => i.id));
+    renderItems();
     // Background relevance verification + summaries via Chrome built-in AI.
     if (settings.aiVerify && isBuiltinAiSupported()) {
       void verifyResults(data.items);
@@ -263,6 +270,26 @@ async function run(forceRefresh = false): Promise<void> {
   } catch (e) {
     results.innerHTML = `<div class="empty">오류: ${escapeHtml((e as Error).message)}</div>`;
   }
+}
+
+/** Render lastItems into #results, applying the in-results search filter. */
+function renderItems(): void {
+  const results = $("#results");
+  results.innerHTML = "";
+  const q = searchQuery.trim().toLowerCase();
+  const items = q
+    ? lastItems.filter(
+        (i) =>
+          i.title.toLowerCase().includes(q) ||
+          i.description.toLowerCase().includes(q) ||
+          i.repoFullName.toLowerCase().includes(q),
+      )
+    : lastItems;
+  if (items.length === 0) {
+    results.innerHTML = `<div class="empty">${q ? "검색 결과가 없습니다." : "결과가 없습니다."}</div>`;
+    return;
+  }
+  for (const item of items) results.appendChild(card(item, newIds.has(item.id)));
 }
 
 /**
@@ -298,6 +325,10 @@ async function verifyResults(items: RadarItem[]): Promise<void> {
 function selectTopic(id: string): void {
   activeTopicId = id;
   activeSubtopicIds = new Set();
+  searchQuery = "";
+  const sb = $("#searchBox") as HTMLInputElement;
+  sb.value = "";
+  $(".search-row").style.display = id === FAVORITES_ID ? "none" : "";
   renderTabs();
   renderSourceChips();
   run(false);
@@ -512,6 +543,11 @@ async function init(): Promise<void> {
   if (activeTopicId) run(false);
 
   $("#refreshBtn").onclick = () => run(true);
+  const searchBox = $("#searchBox") as HTMLInputElement;
+  searchBox.oninput = () => {
+    searchQuery = searchBox.value;
+    if (activeTopicId !== FAVORITES_ID) renderItems();
+  };
   $("#settingsBtn").onclick = openSettings;
   $("#closeSettings").onclick = () => $("#settingsPanel").classList.add("hidden");
   $("#saveSettings").onclick = saveSettingsFromForm;
