@@ -214,6 +214,27 @@ body {
   height: fit-content;
 }
 .card-desc { color: var(--text); opacity: .92; margin: 7px 0; line-height: 1.45; }
+.card-desc.translating {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  opacity: .8;
+}
+.tspin {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--glass-border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: tspin 0.7s linear infinite;
+  flex: none;
+}
+@keyframes tspin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .tspin { animation-duration: 2s; }
+}
 .orig-toggle {
   font-size: 10px;
   padding: 1px 7px;
