@@ -86,14 +86,32 @@ async function getDetector(): Promise<AiDetector | null> {
   return detectorPromise;
 }
 
+/** Rough language guess from character scripts (fallback when detection is
+ *  unavailable or low-confidence). Returns a BCP-47 base code or null. */
+function guessByScript(text: string): string | null {
+  if (/[\u3040-\u30ff]/.test(text)) return "ja"; // Hiragana/Katakana → Japanese
+  if (/[\uac00-\ud7a3]/.test(text)) return "ko"; // Hangul
+  if (/[\u4e00-\u9fff]/.test(text)) return "zh"; // CJK ideographs (default to Chinese)
+  if (/[\u0400-\u04ff]/.test(text)) return "ru"; // Cyrillic
+  if (/[\u0600-\u06ff]/.test(text)) return "ar"; // Arabic
+  if (/[\u0e00-\u0e7f]/.test(text)) return "th"; // Thai
+  return null;
+}
+
 async function detectLanguage(text: string): Promise<string> {
+  const sample = text.slice(0, 200);
+  const scriptGuess = guessByScript(sample);
   try {
     const detector = await getDetector();
-    if (!detector) return "en";
-    const results = await detector.detect(text.slice(0, 200));
-    return results[0]?.detectedLanguage ?? "en";
+    if (!detector) return scriptGuess ?? "en";
+    const results = await detector.detect(sample);
+    const top = results[0];
+    // Trust the detector only when it is reasonably confident; otherwise prefer
+    // the script-based guess (e.g. detector unsure on short CJK text).
+    if (top && top.confidence >= 0.5) return top.detectedLanguage;
+    return scriptGuess ?? top?.detectedLanguage ?? "en";
   } catch {
-    return "en";
+    return scriptGuess ?? "en";
   }
 }
 
@@ -128,22 +146,38 @@ export async function translateText(text: string, target: string): Promise<strin
 
   const source = await detectLanguage(text);
   const baseTarget = target.split("-")[0];
-  if (source === baseTarget) {
+  const baseSource = source.split("-")[0];
+  if (baseSource === baseTarget) {
     textCache.set(cacheKey, text);
     return text;
   }
 
-  const translator = await getTranslator(source, target);
-  if (!translator) {
-    textCache.set(cacheKey, text);
-    return text;
+  // Try a direct translator first.
+  let out = await tryTranslate(text, source, target);
+
+  // Fallback: pivot through English when the direct language pair has no pack
+  // (e.g. zh->ko). English pairs are broadly available, so source->en->target
+  // usually works even when source->target does not.
+  if (out === null && baseSource !== "en" && baseTarget !== "en") {
+    const viaEn = await tryTranslate(text, source, "en");
+    if (viaEn !== null) {
+      const final = await tryTranslate(viaEn, "en", target);
+      if (final !== null) out = final;
+    }
   }
+
+  const result = out ?? text;
+  textCache.set(cacheKey, result);
+  return result;
+}
+
+/** Attempt one translation; returns null if unavailable or on error. */
+async function tryTranslate(text: string, source: string, target: string): Promise<string | null> {
+  const translator = await getTranslator(source, target);
+  if (!translator) return null;
   try {
-    const out = await translator.translate(text);
-    textCache.set(cacheKey, out);
-    return out;
+    return await translator.translate(text);
   } catch {
-    textCache.set(cacheKey, text);
-    return text;
+    return null;
   }
 }
