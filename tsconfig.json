@@ -15,5 +15,5 @@
     "types": ["chrome", "node"],
     "outDir": "dist"
   },
-  "include": ["extension/src", "worker/src", "tests"]
+  "include": ["extension/src", "worker/src", "web/src", "tests"]
 }

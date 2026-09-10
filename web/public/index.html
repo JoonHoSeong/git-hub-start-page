@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub Topic Radar</title>
+    <meta name="description" content="GitHub 트렌딩 저장소를 주제(키워드)별로 모아 보여주는 웹앱" />
+    <link rel="icon" href="icon128.png" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body class="fulltab">
+    <header class="topbar">
+      <div class="brand">📡 GitHub Topic Radar</div>
+      <div class="topbar-actions">
+        <select id="sortBy" class="sort-select" title="정렬 기준">
+          <option value="momentum">🔥 트렌드순</option>
+          <option value="surge">📈 급상승순</option>
+          <option value="stars">⭐ 스타순</option>
+          <option value="forks">🍴 포크순</option>
+          <option value="updated">⏱ 최신순</option>
+        </select>
+        <button id="refreshBtn" class="icon-btn" title="새로고침">↻</button>
+        <button id="authBtn" class="auth-btn">로그인</button>
+        <button id="settingsBtn" class="icon-btn" title="설정">⚙️</button>
+      </div>
+    </header>
+
+    <nav id="tabs" class="tabs"></nav>
+
+    <div id="sourceChips" class="source-chips"></div>
+
+    <div class="search-row">
+      <input id="searchBox" class="search-box" type="search" placeholder="결과 내 검색 (이름·설명)" />
+    </div>
+
+    <main id="results" class="results">
+      <div class="empty">주제를 선택하세요.</div>
+    </main>
+
+    <section id="settingsPanel" class="settings-panel hidden">
+      <h2>설정</h2>
+      <fieldset>
+        <legend>정확도 검증 (Chrome 내장 AI)</legend>
+        <label class="checkbox-row"><input id="aiVerify" type="checkbox" /> 내장 AI로 관련성 검증 + 요약</label>
+        <label>검증할 상위 개수 <input id="aiVerifyTopN" type="number" min="1" max="50" /></label>
+        <p class="hint" id="aiVerifyNote"></p>
+      </fieldset>
+      <fieldset>
+        <legend>일반</legend>
+        <label>테마
+          <select id="theme">
+            <option value="auto">시스템 설정 따름</option>
+            <option value="dark">다크</option>
+            <option value="light">라이트</option>
+          </select>
+        </label>
+        <label>카드 크기 / 그리드 밀도
+          <select id="density">
+            <option value="comfortable">크게 (열 적음)</option>
+            <option value="cozy">보통</option>
+            <option value="compact">촘촘하게 (열 많음)</option>
+          </select>
+        </label>
+        <label>번역 (브라우저 내장 AI)
+          <select id="translateTo"></select>
+        </label>
+        <p class="hint" id="translateNote"></p>
+        <label>캐시 유지(분) <input id="cacheTtl" type="number" min="1" max="240" /></label>
+      </fieldset>
+      <div class="settings-actions">
+        <button id="saveSettings" class="primary">저장</button>
+        <button id="closeSettings">닫기</button>
+      </div>
+      <hr />
+      <div class="topic-manager">
+        <h3>주제 관리</h3>
+        <div id="topicList"></div>
+        <div class="add-topic">
+          <input id="newTopicName" type="text" placeholder="새 주제 이름 (예: Rust)" />
+          <input id="newTopicKeywords" type="text" placeholder="키워드 (쉼표: rust, cargo)" />
+          <button id="addTopic">추가</button>
+        </div>
+        <p class="hint">⚠️ 직접 추가한 주제의 급상승(트렌드)은 이 브라우저의 로컬 기록으로만 계산되어, 캐시/브라우저 데이터를 삭제하면 초기화됩니다. 기본 주제는 서버 공용 트렌드라 영향받지 않습니다.</p>
+        <p class="hint">이 웹 버전의 즐겨찾기·설정·트렌드 기록은 이 브라우저에만 저장됩니다 (기기 간 동기화 없음). 여러 기기에서 동기화하려면 Chrome 확장 프로그램 버전을 사용하세요.</p>
+      </div>
+      <hr />
+      <p class="contact">문제가 발생하거나 문의가 있으면 <a href="mailto:joonho1366@gmail.com">joonho1366@gmail.com</a> 으로 연락 주세요.</p>
+    </section>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>

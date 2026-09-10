@@ -8,7 +8,7 @@ compatibility_date = "2024-11-01"
 #   wrangler secret put GITHUB_PAT   # optional, raises collector rate limit
 
 [vars]
-ALLOWED_ORIGIN = "chrome-extension://jlillemjommikolcmnlbnoeegmbcpold"
+ALLOWED_ORIGINS = "chrome-extension://jlillemjommikolcmnlbnoeegmbcpold,https://github-radar.slothprogrammer.cloud"
 
 # Shared trend collector runs hourly.
 [triggers]
