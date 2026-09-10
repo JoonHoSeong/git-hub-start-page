@@ -115,12 +115,18 @@ function card(item: RadarItem): HTMLElement {
   const summary = item.summary
     ? `<div class="card-summary">💡 ${escapeHtml(item.summary)}</div>`
     : "";
+  const translating = Boolean(item.description) && !!settings.translateTo && settings.translateTo !== "off";
+  const descHtml = item.description
+    ? translating
+      ? `<div class="card-desc translating"><span class="tspin"></span>번역 중…</div>`
+      : `<div class="card-desc">${escapeHtml(item.description)}</div>`
+    : "";
   el.innerHTML = `
     <div class="card-head">
       <a class="card-title" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">${escapeHtml(item.title)}</a>
       <span class="badge">REPO</span>
     </div>
-    ${item.description ? `<div class="card-desc">${escapeHtml(item.description)}</div>` : ""}
+    ${descHtml}
     ${summary}
     <div class="card-meta">
       <span class="meta-item">⭐ ${item.stars.toLocaleString()}</span>
@@ -134,7 +140,7 @@ function card(item: RadarItem): HTMLElement {
   bmBtn.onclick = () => toggleBookmark(item, bmBtn);
 
   // Background translation of the description (Chrome built-in Translator API).
-  if (item.description && settings.translateTo && settings.translateTo !== "off") {
+  if (translating) {
     const descEl = el.querySelector<HTMLDivElement>(".card-desc");
     if (descEl) void translateCardDesc(descEl, item.description, settings.translateTo);
   }
@@ -142,15 +148,27 @@ function card(item: RadarItem): HTMLElement {
 }
 
 /**
- * Translate one card's description in place, adding a small toggle to switch
- * between the translated text and the original. Runs asynchronously so cards
- * render immediately with the original text first.
+ * Translate a card's description. The element starts in a "번역 중…" loading
+ * state; on completion it is replaced with the translated text (plus a 원문/
+ * 번역 toggle). If translation is unavailable, fails, or is a no-op (same
+ * language), it falls back to showing the original text.
  */
 async function translateCardDesc(el: HTMLDivElement, original: string, target: string): Promise<void> {
-  if (!isTranslationSupported()) return;
+  const showOriginal = () => {
+    el.classList.remove("translating");
+    el.textContent = original;
+  };
+  if (!isTranslationSupported()) {
+    showOriginal();
+    return;
+  }
   try {
     const translated = await translateText(original, target);
-    if (translated === original) return; // same language or failed -> keep original
+    el.classList.remove("translating");
+    if (translated === original) {
+      el.textContent = original; // same language or failed -> original
+      return;
+    }
     let showingTranslated = true;
     const render = () => {
       el.innerHTML = "";
@@ -170,7 +188,7 @@ async function translateCardDesc(el: HTMLDivElement, original: string, target: s
     };
     render();
   } catch {
-    /* keep original */
+    showOriginal();
   }
 }
 
