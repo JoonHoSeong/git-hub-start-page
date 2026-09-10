@@ -54,6 +54,9 @@ export interface RadarItem {
   topics: string[];
   /** Computed momentum score (higher = hotter). Set by the ranker. */
   score: number;
+  /** Recent star gain per day, measured between observations. undefined until
+   *  a second observation exists. Set by the trend tracker. */
+  trend?: number;
   /** Optional AI-generated one-line summary. */
   summary?: string;
   /** Optional AI relevance verdict. */

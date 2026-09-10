@@ -131,6 +131,11 @@ function card(item: RadarItem): HTMLElement {
     <div class="card-meta">
       <span class="meta-item">⭐ ${item.stars.toLocaleString()}</span>
       <span class="meta-item">🍴 ${item.forks.toLocaleString()}</span>
+      ${
+        item.trend !== undefined && item.trend >= 1
+          ? `<span class="meta-item trend-up" title="지난 방문 이후 측정된 실제 star 증가">📈 +${Math.round(item.trend)}/일</span>`
+          : ""
+      }
       <span class="meta-item" title="마지막 업데이트 시각">업데이트 ${relativeTime(item.updatedAt)}</span>
       <span class="meta-item" title="최근 상승세(momentum) 점수">🔥 ${item.score.toFixed(0)}</span>
       <button class="star-btn" title="북마크 (이 앱에만 저장)">🔖</button>
