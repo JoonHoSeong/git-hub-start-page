@@ -59,6 +59,30 @@ export function rankItems(
   return items;
 }
 
+export type SortBy = "momentum" | "stars" | "forks" | "updated";
+
+/**
+ * Sort items by the chosen criterion. "momentum" uses the precomputed score;
+ * the others sort by the corresponding field (descending). Always computes the
+ * momentum score first so the 🔥 badge stays meaningful regardless of sort.
+ */
+export function sortItems(
+  items: RadarItem[],
+  topic: TopicRecipe,
+  sortBy: SortBy,
+  now: Date = new Date(),
+): RadarItem[] {
+  for (const item of items) item.score = computeScore(item, topic, now);
+  const cmp: Record<SortBy, (a: RadarItem, b: RadarItem) => number> = {
+    momentum: (a, b) => b.score - a.score,
+    stars: (a, b) => b.stars - a.stars,
+    forks: (a, b) => b.forks - a.forks,
+    updated: (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  };
+  items.sort(cmp[sortBy]);
+  return items;
+}
+
 /**
  * Drop items whose text matches any of the topic's exclusion terms.
  *

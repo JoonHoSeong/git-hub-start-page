@@ -53,6 +53,8 @@ export interface RadarItem {
   url: string;
   description: string;
   stars: number;
+  /** Fork count (0 for issues/PRs). */
+  forks: number;
   /** ISO timestamp of creation. */
   createdAt: string;
   /** ISO timestamp of last activity (push or update). */
@@ -91,6 +93,8 @@ export interface AppSettings {
   /** Translate card descriptions to this language via Chrome's built-in
    *  Translator API. "off" disables translation; otherwise a BCP-47 code. */
   translateTo: string;
+  /** Sort order for repository results. */
+  sortBy: "momentum" | "stars" | "forks" | "updated";
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -101,4 +105,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: "auto",
   density: "comfortable",
   translateTo: "off",
+  sortBy: "momentum",
 };

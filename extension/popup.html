@@ -10,6 +10,12 @@
     <header class="topbar">
       <div class="brand">📡 Topic Radar</div>
       <div class="topbar-actions">
+        <select id="sortBy" class="sort-select" title="정렬 기준">
+          <option value="momentum">🔥 트렌드순</option>
+          <option value="stars">⭐ 스타순</option>
+          <option value="forks">🍴 포크순</option>
+          <option value="updated">⏱ 최신순</option>
+        </select>
         <button id="refreshBtn" class="icon-btn" title="새로고침">↻</button>
         <button id="authBtn" class="auth-btn">로그인</button>
         <button id="settingsBtn" class="icon-btn" title="설정">⚙️</button>

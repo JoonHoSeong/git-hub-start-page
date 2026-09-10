@@ -1,6 +1,6 @@
 import type { AppSettings, RadarItem, TopicRecipe } from "./types.js";
 import { fetchTopic } from "./github.js";
-import { rankItems, applyExclusions } from "./ranking.js";
+import { applyExclusions, sortItems } from "./ranking.js";
 import { enrichWithLlm } from "./llm.js";
 import { getCache, setCache } from "./storage.js";
 
@@ -33,7 +33,7 @@ export async function runTopic(
   topic: TopicRecipe,
   settings: AppSettings,
   token?: string,
-  opts: { forceRefresh?: boolean; subtopicId?: string } = {},
+  opts: { forceRefresh?: boolean; subtopicId?: string; onAuthFail?: () => void } = {},
 ): Promise<RunResult> {
   // If a subtopic is active, narrow the search to its topic tags and add any
   // extra exclusions. Uses a separate cache key so subtopic results are cached
@@ -52,12 +52,16 @@ export async function runTopic(
 
   if (!opts.forceRefresh) {
     const cached = await getCache<RadarItem[]>(cacheKey, settings.cacheTtlMinutes);
-    if (cached) return { items: cached, fromCache: true, llmApplied: false };
+    if (cached) {
+      // Re-sort cached items so a sort-order change applies without refetching.
+      const sorted = sortItems(cached, effectiveTopic, settings.sortBy);
+      return { items: sorted, fromCache: true, llmApplied: false };
+    }
   }
 
-  const raw = await fetchTopic(effectiveTopic, token);
+  const raw = await fetchTopic(effectiveTopic, token, opts.onAuthFail);
   const filtered = applyExclusions(dedupe(raw), effectiveTopic);
-  const ranked = rankItems(filtered, effectiveTopic);
+  const ranked = sortItems(filtered, effectiveTopic, settings.sortBy);
 
   const hasLlm = Boolean(settings.llm.apiKey) || /localhost|127\.0\.0\.1/.test(settings.llm.baseUrl);
   let llmApplied = false;

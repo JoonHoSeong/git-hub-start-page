@@ -35,6 +35,11 @@ async function handle(msg: Msg): Promise<unknown> {
       return runTopic(topic, settings, token ?? undefined, {
         forceRefresh: msg.forceRefresh,
         subtopicId: msg.subtopicId,
+        onAuthFail: () => {
+          // Token is invalid (expired/revoked). Drop it so future calls are
+          // anonymous instead of failing with 401.
+          void saveToken(null);
+        },
       });
     }
     case "login": {

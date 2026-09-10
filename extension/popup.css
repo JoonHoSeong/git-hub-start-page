@@ -120,6 +120,17 @@ body {
 }
 .icon-btn { width: 30px; height: 30px; font-size: 14px; }
 .auth-btn { font-size: 12px; font-weight: 600; }
+.sort-select {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 5px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
 .icon-btn:hover, .auth-btn:hover {
   background: var(--glass-strong);
   border-color: var(--accent);
