@@ -6,6 +6,7 @@
   "description": "Chrome extension that curates GitHub trending content by custom keyword topics.",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "build:web": "node scripts/build-web.mjs",
     "package": "node scripts/package.mjs",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "typecheck": "tsc --noEmit"

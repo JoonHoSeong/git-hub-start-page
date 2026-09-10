@@ -64,5 +64,5 @@ curl -i https://github-topic-radar-oauth.<your-subdomain>.workers.dev/exchange
 
 ## 보안 메모
 
-- `wrangler.toml`의 `ALLOWED_ORIGIN`은 이 extension(`chrome-extension://jlillemjommikolcmnlbnoeegmbcpold`)만 허용하도록 잠겨 있습니다.
+- `wrangler.toml`의 `ALLOWED_ORIGINS`(comma-separated)는 extension(`chrome-extension://jlillemjommikolcmnlbnoeegmbcpold`)과 웹(`https://github-radar.slothprogrammer.cloud`)만 허용하도록 잠겨 있습니다.
 - 이 Worker는 `access_token`만 반환하며 secret은 절대 노출하지 않습니다.

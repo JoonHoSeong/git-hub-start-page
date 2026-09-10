@@ -15,7 +15,7 @@
  * Bindings (wrangler.toml):
  *   TREND        KV namespace
  * Vars:
- *   ALLOWED_ORIGIN
+ *   ALLOWED_ORIGINS  (comma-separated list; extension + web origins)
  */
 
 interface KVNamespace {
@@ -27,7 +27,8 @@ export interface Env {
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
   GITHUB_PAT?: string;
-  ALLOWED_ORIGIN?: string;
+  /** Comma-separated list of allowed origins (extension + web). */
+  ALLOWED_ORIGINS?: string;
   TREND: KVNamespace;
 }
 
@@ -69,18 +70,24 @@ interface StarSnapshot {
   prevAt?: number;
 }
 
-function corsHeaders(origin: string): Record<string, string> {
+function corsHeaders(requestOrigin: string | null, allowed: string[]): Record<string, string> {
+  const origin = requestOrigin && allowed.includes(requestOrigin) ? requestOrigin : allowed[0] ?? "*";
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
   };
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const cors = corsHeaders(env.ALLOWED_ORIGIN ?? "*");
+    const allowed = (env.ALLOWED_ORIGINS ?? "*")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const cors = corsHeaders(request.headers.get("Origin"), allowed);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
 
     const url = new URL(request.url);
