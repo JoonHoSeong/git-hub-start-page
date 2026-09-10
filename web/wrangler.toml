@@ -7,9 +7,7 @@ compatibility_date = "2024-11-01"
 directory = "./dist"
 not_found_handling = "single-page-application"
 
-# After the first `npx wrangler deploy` from this directory, add the custom
-# domain in the Cloudflare dashboard (Workers & Pages > this worker > Settings
-# > Domains & Routes > Add > Custom domain), or uncomment and adjust:
-# [[routes]]
-# pattern = "github-radar.slothprogrammer.cloud/*"
-# custom_domain = true
+# Custom domain for the deployed static site.
+[[routes]]
+pattern = "github-radar.slothprogrammer.cloud"
+custom_domain = true
