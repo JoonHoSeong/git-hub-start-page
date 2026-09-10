@@ -62,7 +62,7 @@ export function rankItems(
   return items;
 }
 
-export type SortBy = "momentum" | "stars" | "forks" | "updated";
+export type SortBy = "momentum" | "surge" | "stars" | "forks" | "updated";
 
 /**
  * Sort items by the chosen criterion. "momentum" uses the precomputed score;
@@ -78,6 +78,14 @@ export function sortItems(
   for (const item of items) item.score = computeScore(item, topic, now);
   const cmp: Record<SortBy, (a: RadarItem, b: RadarItem) => number> = {
     momentum: (a, b) => b.score - a.score,
+    // Surge: by measured recent trend (stars/day gained since last visit).
+    // Items with no measured trend yet sort last; ties fall back to momentum.
+    surge: (a, b) => {
+      const ta = a.trend ?? -1;
+      const tb = b.trend ?? -1;
+      if (tb !== ta) return tb - ta;
+      return b.score - a.score;
+    },
     stars: (a, b) => b.stars - a.stars,
     forks: (a, b) => b.forks - a.forks,
     updated: (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),

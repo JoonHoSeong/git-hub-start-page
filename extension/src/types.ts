@@ -78,7 +78,7 @@ export interface AppSettings {
    *  Translator API. "off" disables translation; otherwise a BCP-47 code. */
   translateTo: string;
   /** Sort order for repository results. */
-  sortBy: "momentum" | "stars" | "forks" | "updated";
+  sortBy: "momentum" | "surge" | "stars" | "forks" | "updated";
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {

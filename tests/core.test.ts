@@ -154,6 +154,14 @@ test("applyExclusions is a no-op when there are no exclude terms", () => {
   assert.equal(out.length, 2);
 });
 
+test("sortItems surge orders by measured trend, untracked items last", () => {
+  const a = item({ id: "a", stars: 100, trend: 5 });
+  const b = item({ id: "b", stars: 100, trend: 50 });
+  const c = item({ id: "c", stars: 100 }); // no trend measured yet
+  const out = sortItems([a, c, b], mcp, "surge", NOW).map((i) => i.id);
+  assert.deepEqual(out, ["b", "a", "c"], "highest trend first, untracked last");
+});
+
 test("sortItems orders by stars, forks, and updated (descending)", () => {
   const a = item({ id: "a", stars: 100, forks: 5, updatedAt: "2026-01-01T00:00:00Z" });
   const b = item({ id: "b", stars: 50, forks: 40, updatedAt: "2026-09-01T00:00:00Z" });
