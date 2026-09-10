@@ -1,18 +1,13 @@
 {
   "manifest_version": 3,
   "name": "GitHub Topic Radar",
-  "version": "0.1.0",
-  "description": "Curate GitHub's trending projects, issues and PRs by your own custom keyword topics (LLM, MCP, Skills, or anything).",
+  "version": "1.0.0",
+  "description": "Curate GitHub's trending repositories by your own custom keyword topics (LLM, MCP, Skills, or anything you define), ranked by real momentum.",
   "permissions": ["storage", "identity", "tabs"],
   "host_permissions": [
     "https://api.github.com/*",
     "https://github.com/*",
     "https://github-topic-radar-oauth.rag-web.workers.dev/*"
-  ],
-  "optional_host_permissions": [
-    "http://localhost/*",
-    "http://127.0.0.1/*",
-    "https://*/*"
   ],
   "action": {
     "default_title": "GitHub Topic Radar (열기)",
