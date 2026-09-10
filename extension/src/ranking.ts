@@ -37,13 +37,10 @@ export function computeScore(
   const has = item.topics.some((t) => wanted.has(t.toLowerCase()));
   const topicScore = has ? 20 : 0;
 
-  // Discussion signal (issues/PRs). Repos usually have 0 here.
-  const discussion = Math.log10(item.comments + item.reactions + 1) * 15;
-
   // Baseline popularity, dampened so it does not dominate velocity.
   const popularity = Math.log10(item.stars + 1) * 5;
 
-  return velocityScore + freshness + topicScore + discussion + popularity;
+  return velocityScore + freshness + topicScore + popularity;
 }
 
 /** Rank items in place by descending momentum score. Returns the array. */

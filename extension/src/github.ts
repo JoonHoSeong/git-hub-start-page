@@ -1,5 +1,5 @@
 import type { RadarItem, TopicRecipe } from "./types.js";
-import { repoSearchUrl, issueSearchUrl, buildTopicQueries } from "./query-builder.js";
+import { repoSearchUrl, buildTopicQueries } from "./query-builder.js";
 
 const GITHUB_API = "https://api.github.com";
 
@@ -24,23 +24,9 @@ interface RepoApi {
   topics?: string[];
 }
 
-interface IssueApi {
-  id: number;
-  title: string;
-  html_url: string;
-  body: string | null;
-  comments: number;
-  created_at: string;
-  updated_at: string;
-  reactions?: { total_count: number };
-  repository_url: string;
-  pull_request?: unknown;
-}
-
 function repoToItem(r: RepoApi): RadarItem {
   return {
     id: `repo:${r.id}`,
-    kind: "repository",
     title: r.full_name,
     repoFullName: r.full_name,
     url: r.html_url,
@@ -49,29 +35,7 @@ function repoToItem(r: RepoApi): RadarItem {
     forks: r.forks_count ?? 0,
     createdAt: r.created_at,
     updatedAt: r.pushed_at,
-    comments: 0,
-    reactions: 0,
     topics: r.topics ?? [],
-    score: 0,
-  };
-}
-
-function issueToItem(i: IssueApi): RadarItem {
-  const repoFullName = i.repository_url.replace(`${GITHUB_API}/repos/`, "");
-  return {
-    id: `issue:${i.id}`,
-    kind: i.pull_request ? "pull_request" : "issue",
-    title: i.title,
-    repoFullName,
-    url: i.html_url,
-    description: (i.body ?? "").slice(0, 280),
-    stars: 0,
-    forks: 0,
-    createdAt: i.created_at,
-    updatedAt: i.updated_at,
-    comments: i.comments,
-    reactions: i.reactions?.total_count ?? 0,
-    topics: [],
     score: 0,
   };
 }
@@ -166,31 +130,13 @@ export async function searchRepos(
   return [...byId.values()];
 }
 
-/** Fetch issues or PRs for a topic. */
-export async function searchIssues(
-  topic: TopicRecipe,
-  kind: "issue" | "pr",
-  token?: string,
-  perPage = 30,
-  onAuthFail?: () => void,
-): Promise<RadarItem[]> {
-  const url = issueSearchUrl(topic, kind, perPage);
-  const data = await getJson<{ items: IssueApi[] }>(url, token, onAuthFail);
-  return data.items.map(issueToItem);
-}
-
-/** Gather all enabled sources for a topic into one list. */
+/** Fetch repository results for a topic. */
 export async function fetchTopic(
   topic: TopicRecipe,
   token?: string,
   onAuthFail?: () => void,
 ): Promise<RadarItem[]> {
-  const jobs: Promise<RadarItem[]>[] = [];
-  if (topic.sources.repositories) jobs.push(searchRepos(topic, token, 30, onAuthFail));
-  if (topic.sources.issues) jobs.push(searchIssues(topic, "issue", token, 30, onAuthFail));
-  if (topic.sources.pullRequests) jobs.push(searchIssues(topic, "pr", token, 30, onAuthFail));
-  const results = await Promise.all(jobs);
-  return results.flat();
+  return searchRepos(topic, token, 30, onAuthFail);
 }
 
 /** Check whether the authenticated user has starred a repo. */

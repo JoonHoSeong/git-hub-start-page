@@ -2,7 +2,6 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   buildRepoQuery,
-  buildIssueQuery,
   buildTopicQueries,
   recentCutoff,
   repoSearchUrl,
@@ -20,7 +19,6 @@ const mcp: TopicRecipe = {
   githubTopics: ["mcp", "model-context-protocol"],
   minStars: 5,
   recentDays: 90,
-  sources: { repositories: true, issues: true, pullRequests: true },
   isPreset: true,
 };
 
@@ -58,22 +56,6 @@ test("recentCutoff computes date N days before now", () => {
   assert.equal(recentCutoff(1, NOW), "2026-09-08");
 });
 
-test("buildIssueQuery adds type and state qualifiers", () => {
-  const issueQ = buildIssueQuery(mcp, "issue", NOW);
-  assert.ok(issueQ.includes("type:issue"), "issue type");
-  assert.ok(issueQ.includes("state:open"), "open state");
-  assert.ok(issueQ.includes("updated:>2026-06-11"), "updated cutoff");
-
-  const prQ = buildIssueQuery(mcp, "pr", NOW);
-  assert.ok(prQ.includes("type:pr"), "pr type");
-});
-
-test("buildIssueQuery falls back to github topics when no include terms", () => {
-  const noInclude: TopicRecipe = { ...mcp, include: [] };
-  const q = buildIssueQuery(noInclude, "issue", NOW);
-  assert.ok(q.includes("mcp") || q.includes("model context protocol"), `fallback text, got: ${q}`);
-});
-
 test("repoSearchUrl builds a valid encoded api.github.com URL", () => {
   const url = repoSearchUrl(mcp, 30, NOW);
   assert.ok(url.startsWith("https://api.github.com/search/repositories?"));
@@ -86,7 +68,6 @@ test("repoSearchUrl builds a valid encoded api.github.com URL", () => {
 function item(partial: Partial<RadarItem>): RadarItem {
   return {
     id: "x",
-    kind: "repository",
     title: "t",
     repoFullName: "o/r",
     url: "https://github.com/o/r",
@@ -95,8 +76,6 @@ function item(partial: Partial<RadarItem>): RadarItem {
     forks: 0,
     createdAt: NOW.toISOString(),
     updatedAt: NOW.toISOString(),
-    comments: 0,
-    reactions: 0,
     topics: [],
     score: 0,
     ...partial,

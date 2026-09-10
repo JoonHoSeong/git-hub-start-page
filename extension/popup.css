@@ -338,6 +338,11 @@ button.primary:hover { filter: brightness(1.06); }
   padding: 8px 0;
   border-bottom: 1px solid var(--glass-border);
 }
+.topic-toggle { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--text); }
+.topic-toggle input { width: auto; margin: 0; }
+.topic-controls { display: flex; gap: 4px; }
+.topic-controls button { padding: 4px 9px; }
+.topic-controls button:disabled { opacity: .4; cursor: not-allowed; }
 .hidden { display: none; }
 
 /* ============================================================

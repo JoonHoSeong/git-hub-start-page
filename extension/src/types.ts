@@ -14,10 +14,10 @@ export interface TopicRecipe {
   minStars: number;
   /** Only consider items pushed/updated within the last N days. */
   recentDays: number;
-  /** Which GitHub content sources to include for this topic. */
-  sources: TopicSources;
   /** Optional finer-grained sub-filters shown as chips within the topic. */
   subtopics?: Subtopic[];
+  /** Whether this topic appears as a tab. Users toggle this in settings. */
+  enabled?: boolean;
   /** True for built-in presets (still user-editable/removable). */
   isPreset: boolean;
 }
@@ -35,46 +35,32 @@ export interface Subtopic {
   exclude?: string[];
 }
 
-export interface TopicSources {
-  repositories: boolean;
-  issues: boolean;
-  pullRequests: boolean;
-}
-
-export type SourceKind = "repository" | "issue" | "pull_request";
-
-/** A normalized result item, unified across repos / issues / PRs. */
+/** A normalized trending repository result. */
 export interface RadarItem {
   id: string;
-  kind: SourceKind;
   title: string;
-  /** owner/name for repos, or repo full name for issues/PRs. */
+  /** owner/name. */
   repoFullName: string;
   url: string;
   description: string;
   stars: number;
-  /** Fork count (0 for issues/PRs). */
+  /** Fork count. */
   forks: number;
   /** ISO timestamp of creation. */
   createdAt: string;
   /** ISO timestamp of last activity (push or update). */
   updatedAt: string;
-  /** Issue/PR discussion signals (0 for repos). */
-  comments: number;
-  reactions: number;
   /** GitHub official topic tags on the repo (when available). */
   topics: string[];
   /** Computed momentum score (higher = hotter). Set by the ranker. */
   score: number;
-  /** Optional LLM-generated one-line summary (high-quality tier). */
+  /** Optional AI-generated one-line summary. */
   summary?: string;
-  /** Optional LLM relevance verdict (high-quality tier). */
+  /** Optional AI relevance verdict. */
   relevant?: boolean;
 }
 
 export interface AppSettings {
-  /** Default sources applied to newly created topics. */
-  defaultSources: TopicSources;
   /** Cache time-to-live in minutes. */
   cacheTtlMinutes: number;
   /** Verify relevance + summarize top results with Chrome's built-in AI. */
@@ -93,7 +79,6 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  defaultSources: { repositories: true, issues: false, pullRequests: false },
   cacheTtlMinutes: 30,
   aiVerify: false,
   aiVerifyTopN: 15,
