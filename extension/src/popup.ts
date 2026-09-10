@@ -138,40 +138,56 @@ function card(item: RadarItem): HTMLElement {
   void refreshBookmarkState(item.id, bmBtn);
   bmBtn.onclick = () => toggleBookmark(item, bmBtn);
 
-  // Background translation of the description (Chrome built-in Translator API).
-  if (item.description && settings.translateTo && settings.translateTo !== "off") {
-    const descEl = el.querySelector<HTMLDivElement>(".card-desc");
-    if (descEl) void translateCardDesc(descEl, item.description, settings.translateTo);
+  // Background translation (Chrome built-in Translator API).
+  if (settings.translateTo && settings.translateTo !== "off") {
+    // Repo titles are "owner/name" (proper nouns) — don't translate them.
+    // Issue/PR titles are real prose, so translate them too.
+    if (item.kind !== "repository") {
+      const titleEl = el.querySelector<HTMLAnchorElement>(".card-title");
+      if (titleEl) void translateInline(titleEl, item.title, settings.translateTo);
+    }
+    if (item.description) {
+      const descEl = el.querySelector<HTMLDivElement>(".card-desc");
+      if (descEl) void translateInline(descEl, item.description, settings.translateTo);
+    }
   }
   return el;
 }
 
 /**
- * Translate one card's description in place, adding a small toggle to switch
- * between the translated text and the original. Runs asynchronously so cards
- * render immediately with the original text first.
+ * Translate an element's text in place, keeping any existing child nodes
+ * (e.g. an <a> title stays a link) by only replacing its text content, and
+ * adding a small 원문/번역 toggle. Renders original first, fills in async.
  */
-async function translateCardDesc(el: HTMLDivElement, original: string, target: string): Promise<void> {
+async function translateInline(
+  el: HTMLElement,
+  original: string,
+  target: string,
+): Promise<void> {
   if (!isTranslationSupported()) return;
   try {
     const translated = await translateText(original, target);
-    if (translated === original) return; // same language or failed -> keep original
+    if (translated === original) return;
     let showingTranslated = true;
+    const isLink = el.tagName === "A";
     const render = () => {
-      el.innerHTML = "";
-      const text = document.createElement("span");
-      text.textContent = showingTranslated ? translated : original;
+      el.textContent = showingTranslated ? translated : original;
       const toggle = document.createElement("button");
       toggle.className = "orig-toggle";
       toggle.textContent = showingTranslated ? "원문" : "번역";
       toggle.title = showingTranslated ? "원문 보기" : "번역 보기";
-      toggle.onclick = () => {
+      toggle.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
         showingTranslated = !showingTranslated;
         render();
       };
-      el.appendChild(text);
-      el.appendChild(document.createTextNode(" "));
-      el.appendChild(toggle);
+      // For link titles, place the toggle right after the link instead of inside.
+      if (isLink) el.after(toggle);
+      else {
+        el.appendChild(document.createTextNode(" "));
+        el.appendChild(toggle);
+      }
     };
     render();
   } catch {
