@@ -438,3 +438,17 @@ body.fulltab .settings-panel > * { max-width: 640px; margin-left: auto; margin-r
   body.fulltab .source-chips,
   body.fulltab .results { padding-left: 18px; padding-right: 18px; }
 }
+
+.contact {
+  font-size: 12px;
+  color: var(--muted, #8b949e);
+  text-align: center;
+  margin: 8px 0 0;
+}
+.contact a {
+  color: var(--accent, #58a6ff);
+  text-decoration: none;
+}
+.contact a:hover {
+  text-decoration: underline;
+}
