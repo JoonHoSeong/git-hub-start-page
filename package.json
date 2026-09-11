@@ -2,6 +2,7 @@
   "name": "github-topic-radar",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Chrome extension that curates GitHub trending content by custom keyword topics.",
   "scripts": {
