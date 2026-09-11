@@ -130,3 +130,7 @@ cd web && npx wrangler deploy   # wrangler.toml의 routes로 커스텀 도메인
 - 커밋 메시지는 Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`).
 - PR 전에 `npm run test`, `npm run typecheck`, `npm run build`(및 웹 변경 시 `npm run build:web`)를 실행하고 결과를 PR 설명에 포함한다.
 - 빌드 산출물(`extension/dist/`, `web/dist/`), `node_modules/`, 시크릿은 커밋하지 않는다.
+
+## 라이선스
+
+[MIT](./LICENSE)
